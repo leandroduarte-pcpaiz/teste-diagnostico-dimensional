@@ -1,0 +1,674 @@
+{
+    "origem": {
+        "componente": 46,
+        "score": 130.0,
+        "escala": 1.0584379787797649
+    },
+    "dimensoes": {
+        "largura_mm": 672.0023,
+        "altura_mm": 162.9994,
+        "orientacao": "HORIZONTAL",
+        "relacao_aspecto": 4.12272867262088
+    },
+    "metricas": {
+        "area_mm2": 107539.3799,
+        "perimetro_mm": 1686.7679
+    },
+    "geometria": {
+        "quantidade_vertices": 49,
+        "quantidade_segmentos": 48,
+        "segmentos": {
+            "horizontais": 6,
+            "verticais": 8,
+            "inclinados": 34,
+            "segmentos": [
+                {
+                    "numero": 1,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 63.506299999999996,
+                    "inicio": {
+                        "x_mm": 672.0023,
+                        "y_mm": 71.4446
+                    },
+                    "fim": {
+                        "x_mm": 672.0023,
+                        "y_mm": 7.9383
+                    }
+                },
+                {
+                    "numero": 2,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 51.969299999999976,
+                    "inicio": {
+                        "x_mm": 672.0023,
+                        "y_mm": 7.9383
+                    },
+                    "fim": {
+                        "x_mm": 620.033,
+                        "y_mm": 7.9383
+                    }
+                },
+                {
+                    "numero": 3,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 7.9383,
+                    "inicio": {
+                        "x_mm": 620.033,
+                        "y_mm": 7.9383
+                    },
+                    "fim": {
+                        "x_mm": 620.033,
+                        "y_mm": 0.0
+                    }
+                },
+                {
+                    "numero": 4,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 568.0637,
+                    "inicio": {
+                        "x_mm": 620.033,
+                        "y_mm": 0.0
+                    },
+                    "fim": {
+                        "x_mm": 51.9693,
+                        "y_mm": 0.0
+                    }
+                },
+                {
+                    "numero": 5,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 7.9383,
+                    "inicio": {
+                        "x_mm": 51.9693,
+                        "y_mm": 0.0
+                    },
+                    "fim": {
+                        "x_mm": 51.9693,
+                        "y_mm": 7.9383
+                    }
+                },
+                {
+                    "numero": 6,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 46.9946,
+                    "inicio": {
+                        "x_mm": 51.9693,
+                        "y_mm": 7.9383
+                    },
+                    "fim": {
+                        "x_mm": 4.9747,
+                        "y_mm": 7.9383
+                    }
+                },
+                {
+                    "numero": 7,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 7.035217498414673,
+                    "inicio": {
+                        "x_mm": 4.9747,
+                        "y_mm": 7.9383
+                    },
+                    "fim": {
+                        "x_mm": 0.0,
+                        "y_mm": 12.9129
+                    }
+                },
+                {
+                    "numero": 8,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 58.531699999999994,
+                    "inicio": {
+                        "x_mm": 0.0,
+                        "y_mm": 12.9129
+                    },
+                    "fim": {
+                        "x_mm": 0.0,
+                        "y_mm": 71.4446
+                    }
+                },
+                {
+                    "numero": 9,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169256454020336,
+                    "inicio": {
+                        "x_mm": 0.0,
+                        "y_mm": 71.4446
+                    },
+                    "fim": {
+                        "x_mm": 1.9052,
+                        "y_mm": 71.6563
+                    }
+                },
+                {
+                    "numero": 10,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.977331454258492,
+                    "inicio": {
+                        "x_mm": 1.9052,
+                        "y_mm": 71.6563
+                    },
+                    "fim": {
+                        "x_mm": 3.8104,
+                        "y_mm": 72.1855
+                    }
+                },
+                {
+                    "numero": 11,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9430360290020305,
+                    "inicio": {
+                        "x_mm": 3.8104,
+                        "y_mm": 72.1855
+                    },
+                    "fim": {
+                        "x_mm": 5.5039,
+                        "y_mm": 73.1381
+                    }
+                },
+                {
+                    "numero": 12,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.033132501830611,
+                    "inicio": {
+                        "x_mm": 5.5039,
+                        "y_mm": 73.1381
+                    },
+                    "fim": {
+                        "x_mm": 7.0915,
+                        "y_mm": 74.4082
+                    }
+                },
+                {
+                    "numero": 13,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.884496147515304,
+                    "inicio": {
+                        "x_mm": 7.0915,
+                        "y_mm": 74.4082
+                    },
+                    "fim": {
+                        "x_mm": 8.2558,
+                        "y_mm": 75.89
+                    }
+                },
+                {
+                    "numero": 14,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.03590944052038,
+                    "inicio": {
+                        "x_mm": 8.2558,
+                        "y_mm": 75.89
+                    },
+                    "fim": {
+                        "x_mm": 9.2084,
+                        "y_mm": 77.6893
+                    }
+                },
+                {
+                    "numero": 15,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.8756047024892986,
+                    "inicio": {
+                        "x_mm": 9.2084,
+                        "y_mm": 77.6893
+                    },
+                    "fim": {
+                        "x_mm": 9.7376,
+                        "y_mm": 79.4887
+                    }
+                },
+                {
+                    "numero": 16,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.0221122347683966,
+                    "inicio": {
+                        "x_mm": 9.7376,
+                        "y_mm": 79.4887
+                    },
+                    "fim": {
+                        "x_mm": 9.9493,
+                        "y_mm": 81.4997
+                    }
+                },
+                {
+                    "numero": 17,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169256454020263,
+                    "inicio": {
+                        "x_mm": 9.9493,
+                        "y_mm": 81.4997
+                    },
+                    "fim": {
+                        "x_mm": 9.7376,
+                        "y_mm": 83.4049
+                    }
+                },
+                {
+                    "numero": 18,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9773314542584992,
+                    "inicio": {
+                        "x_mm": 9.7376,
+                        "y_mm": 83.4049
+                    },
+                    "fim": {
+                        "x_mm": 9.2084,
+                        "y_mm": 85.3101
+                    }
+                },
+                {
+                    "numero": 19,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9430360290020352,
+                    "inicio": {
+                        "x_mm": 9.2084,
+                        "y_mm": 85.3101
+                    },
+                    "fim": {
+                        "x_mm": 8.2558,
+                        "y_mm": 87.0036
+                    }
+                },
+                {
+                    "numero": 20,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.96885392551098,
+                    "inicio": {
+                        "x_mm": 8.2558,
+                        "y_mm": 87.0036
+                    },
+                    "fim": {
+                        "x_mm": 7.0915,
+                        "y_mm": 88.5913
+                    }
+                },
+                {
+                    "numero": 21,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9687141488799196,
+                    "inicio": {
+                        "x_mm": 7.0915,
+                        "y_mm": 88.5913
+                    },
+                    "fim": {
+                        "x_mm": 5.5039,
+                        "y_mm": 89.7555
+                    }
+                },
+                {
+                    "numero": 22,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9430360290020374,
+                    "inicio": {
+                        "x_mm": 5.5039,
+                        "y_mm": 89.7555
+                    },
+                    "fim": {
+                        "x_mm": 3.8104,
+                        "y_mm": 90.7081
+                    }
+                },
+                {
+                    "numero": 23,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9773582199490287,
+                    "inicio": {
+                        "x_mm": 3.8104,
+                        "y_mm": 90.7081
+                    },
+                    "fim": {
+                        "x_mm": 1.9052,
+                        "y_mm": 91.2374
+                    }
+                },
+                {
+                    "numero": 24,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169146042534084,
+                    "inicio": {
+                        "x_mm": 1.9052,
+                        "y_mm": 91.2374
+                    },
+                    "fim": {
+                        "x_mm": 0.0,
+                        "y_mm": 91.449
+                    }
+                },
+                {
+                    "numero": 25,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 58.531700000000015,
+                    "inicio": {
+                        "x_mm": 0.0,
+                        "y_mm": 91.449
+                    },
+                    "fim": {
+                        "x_mm": 0.0,
+                        "y_mm": 149.9807
+                    }
+                },
+                {
+                    "numero": 26,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 7.035217498414659,
+                    "inicio": {
+                        "x_mm": 0.0,
+                        "y_mm": 149.9807
+                    },
+                    "fim": {
+                        "x_mm": 4.9747,
+                        "y_mm": 154.9553
+                    }
+                },
+                {
+                    "numero": 27,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 46.9946,
+                    "inicio": {
+                        "x_mm": 4.9747,
+                        "y_mm": 154.9553
+                    },
+                    "fim": {
+                        "x_mm": 51.9693,
+                        "y_mm": 154.9553
+                    }
+                },
+                {
+                    "numero": 28,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 8.044100000000014,
+                    "inicio": {
+                        "x_mm": 51.9693,
+                        "y_mm": 154.9553
+                    },
+                    "fim": {
+                        "x_mm": 51.9693,
+                        "y_mm": 162.9994
+                    }
+                },
+                {
+                    "numero": 29,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 568.0637,
+                    "inicio": {
+                        "x_mm": 51.9693,
+                        "y_mm": 162.9994
+                    },
+                    "fim": {
+                        "x_mm": 620.033,
+                        "y_mm": 162.9994
+                    }
+                },
+                {
+                    "numero": 30,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 8.044100000000014,
+                    "inicio": {
+                        "x_mm": 620.033,
+                        "y_mm": 162.9994
+                    },
+                    "fim": {
+                        "x_mm": 620.033,
+                        "y_mm": 154.9553
+                    }
+                },
+                {
+                    "numero": 31,
+                    "tipo": "HORIZONTAL",
+                    "comprimento_mm": 51.969299999999976,
+                    "inicio": {
+                        "x_mm": 620.033,
+                        "y_mm": 154.9553
+                    },
+                    "fim": {
+                        "x_mm": 672.0023,
+                        "y_mm": 154.9553
+                    }
+                },
+                {
+                    "numero": 32,
+                    "tipo": "VERTICAL",
+                    "comprimento_mm": 63.506299999999996,
+                    "inicio": {
+                        "x_mm": 672.0023,
+                        "y_mm": 154.9553
+                    },
+                    "fim": {
+                        "x_mm": 672.0023,
+                        "y_mm": 91.449
+                    }
+                },
+                {
+                    "numero": 33,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169146042534444,
+                    "inicio": {
+                        "x_mm": 672.0023,
+                        "y_mm": 91.449
+                    },
+                    "fim": {
+                        "x_mm": 670.0971,
+                        "y_mm": 91.2374
+                    }
+                },
+                {
+                    "numero": 34,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.977358219948954,
+                    "inicio": {
+                        "x_mm": 670.0971,
+                        "y_mm": 91.2374
+                    },
+                    "fim": {
+                        "x_mm": 668.1919,
+                        "y_mm": 90.7081
+                    }
+                },
+                {
+                    "numero": 35,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9430360290021123,
+                    "inicio": {
+                        "x_mm": 668.1919,
+                        "y_mm": 90.7081
+                    },
+                    "fim": {
+                        "x_mm": 666.4984,
+                        "y_mm": 89.7555
+                    }
+                },
+                {
+                    "numero": 36,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9687947912364443,
+                    "inicio": {
+                        "x_mm": 666.4984,
+                        "y_mm": 89.7555
+                    },
+                    "fim": {
+                        "x_mm": 664.9107,
+                        "y_mm": 88.5913
+                    }
+                },
+                {
+                    "numero": 37,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9687947912365351,
+                    "inicio": {
+                        "x_mm": 664.9107,
+                        "y_mm": 88.5913
+                    },
+                    "fim": {
+                        "x_mm": 663.7465,
+                        "y_mm": 87.0036
+                    }
+                },
+                {
+                    "numero": 38,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.943036029002017,
+                    "inicio": {
+                        "x_mm": 663.7465,
+                        "y_mm": 87.0036
+                    },
+                    "fim": {
+                        "x_mm": 662.7939,
+                        "y_mm": 85.3101
+                    }
+                },
+                {
+                    "numero": 39,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9773582199490476,
+                    "inicio": {
+                        "x_mm": 662.7939,
+                        "y_mm": 85.3101
+                    },
+                    "fim": {
+                        "x_mm": 662.2646,
+                        "y_mm": 83.4049
+                    }
+                },
+                {
+                    "numero": 40,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169146042533989,
+                    "inicio": {
+                        "x_mm": 662.2646,
+                        "y_mm": 83.4049
+                    },
+                    "fim": {
+                        "x_mm": 662.053,
+                        "y_mm": 81.4997
+                    }
+                },
+                {
+                    "numero": 41,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.0221017679632323,
+                    "inicio": {
+                        "x_mm": 662.053,
+                        "y_mm": 81.4997
+                    },
+                    "fim": {
+                        "x_mm": 662.2646,
+                        "y_mm": 79.4887
+                    }
+                },
+                {
+                    "numero": 42,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.8756329198433275,
+                    "inicio": {
+                        "x_mm": 662.2646,
+                        "y_mm": 79.4887
+                    },
+                    "fim": {
+                        "x_mm": 662.7939,
+                        "y_mm": 77.6893
+                    }
+                },
+                {
+                    "numero": 43,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.035909440520362,
+                    "inicio": {
+                        "x_mm": 662.7939,
+                        "y_mm": 77.6893
+                    },
+                    "fim": {
+                        "x_mm": 663.7465,
+                        "y_mm": 75.89
+                    }
+                },
+                {
+                    "numero": 44,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.884434366063233,
+                    "inicio": {
+                        "x_mm": 663.7465,
+                        "y_mm": 75.89
+                    },
+                    "fim": {
+                        "x_mm": 664.9107,
+                        "y_mm": 74.4082
+                    }
+                },
+                {
+                    "numero": 45,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 2.033210589191333,
+                    "inicio": {
+                        "x_mm": 664.9107,
+                        "y_mm": 74.4082
+                    },
+                    "fim": {
+                        "x_mm": 666.4984,
+                        "y_mm": 73.1381
+                    }
+                },
+                {
+                    "numero": 46,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9430360290021051,
+                    "inicio": {
+                        "x_mm": 666.4984,
+                        "y_mm": 73.1381
+                    },
+                    "fim": {
+                        "x_mm": 668.1919,
+                        "y_mm": 72.1855
+                    }
+                },
+                {
+                    "numero": 47,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9773314542584175,
+                    "inicio": {
+                        "x_mm": 668.1919,
+                        "y_mm": 72.1855
+                    },
+                    "fim": {
+                        "x_mm": 670.0971,
+                        "y_mm": 71.6563
+                    }
+                },
+                {
+                    "numero": 48,
+                    "tipo": "INCLINADO",
+                    "comprimento_mm": 1.9169256454020696,
+                    "inicio": {
+                        "x_mm": 670.0971,
+                        "y_mm": 71.6563
+                    },
+                    "fim": {
+                        "x_mm": 672.0023,
+                        "y_mm": 71.4446
+                    }
+                }
+            ]
+        },
+        "arcos": {
+            "arcos": [],
+            "quantidade": 0,
+            "quantidade_r10": 0,
+            "raios_r10": []
+        }
+    },
+    "fabricacao": {
+        "tipo": "PECA_PLANA",
+        "status": "SEM_DOBRAS_IDENTIFICADAS",
+        "dobras": {
+            "quantidade": 0,
+            "status": "NAO_IDENTIFICADAS",
+            "dobras": []
+        },
+        "indicadores": [
+            "GEOMETRIA_ALONGADA",
+            "GEOMETRIA_DETALHADA"
+        ],
+        "observacoes": [
+            "As dobras ainda não foram confirmadas por dados específicos do desenho."
+        ]
+    }
+}

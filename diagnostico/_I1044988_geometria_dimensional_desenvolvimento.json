@@ -1,0 +1,305 @@
+{
+    "aizi": {
+        "modulo": "calculadora_desenvolvimento",
+        "versao": "2.0"
+    },
+    "arquivo_origem": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_geometria_dimensional.json",
+    "arquivos_consultados": [
+        "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_geometria.json",
+        "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_diagnostico.json",
+        "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988.txt"
+    ],
+    "componente": 46,
+    "score_identificacao": 130.0,
+    "escala": 1.0584379787797649,
+    "dimensoes_geometricas_mm": {
+        "largura": 672.0023,
+        "altura": 162.9994
+    },
+    "evidencias": {
+        "espessuras_encontradas_mm": [],
+        "raios_encontrados_mm": [
+            10.0,
+            10.0,
+            10.0,
+            10.0
+        ],
+        "angulos_encontrados_graus": [
+            90.0,
+            90.0,
+            90.0,
+            90.0
+        ],
+        "materiais_encontrados": [],
+        "fontes": [
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_geometria.json",
+                "tipo": "JSON"
+            },
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_diagnostico.json",
+                "tipo": "JSON"
+            },
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988.txt",
+                "tipo": "TXT"
+            }
+        ]
+    },
+    "parametros_fabricacao": {
+        "material": null,
+        "espessura_mm": null,
+        "raios_identificados_mm": [
+            10.0
+        ],
+        "raio_interno_mm": 10.0,
+        "fator_k": null,
+        "fator_dobra": null,
+        "metodo_fabricacao": null,
+        "fontes": [
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_geometria.json",
+                "tipo": "JSON"
+            },
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988_diagnostico.json",
+                "tipo": "JSON"
+            },
+            {
+                "arquivo": "C:\\Projetos\\AIZI Engineering AI\\diagnostico\\_I1044988.txt",
+                "tipo": "TXT"
+            }
+        ]
+    },
+    "quantidade_possiveis_dobras": 10,
+    "dobras": [
+        {
+            "vertice": 2,
+            "x_mm": 672.0023,
+            "y_mm": 7.9383,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 3,
+            "x_mm": 620.033,
+            "y_mm": 7.9383,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 4,
+            "x_mm": 620.033,
+            "y_mm": 0.0,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 5,
+            "x_mm": 51.9693,
+            "y_mm": 0.0,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 6,
+            "x_mm": 51.9693,
+            "y_mm": 7.9383,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 28,
+            "x_mm": 51.9693,
+            "y_mm": 154.9553,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 29,
+            "x_mm": 51.9693,
+            "y_mm": 162.9994,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 30,
+            "x_mm": 620.033,
+            "y_mm": 162.9994,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 31,
+            "x_mm": 620.033,
+            "y_mm": 154.9553,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        },
+        {
+            "vertice": 32,
+            "x_mm": 672.0023,
+            "y_mm": 154.9553,
+            "angulo_graus": 90.0,
+            "status": "EVIDENCIADA",
+            "evidencia": [
+                "ANGULO_90_GRAUS",
+                "RAIO_IDENTIFICADO",
+                "ANGULO_IDENTIFICADO"
+            ]
+        }
+    ],
+    "desenvolvimento": {
+        "status": "CALCULO_PARCIAL",
+        "blank_calculado": "NAO",
+        "desenvolvimento_calculado": "NAO",
+        "comprimento_geometrico_mm": 1686.7675,
+        "quantidade_dobras_calculaveis": 10,
+        "bend_allowance_total_mm": null,
+        "dobras_calculadas": [
+            {
+                "vertice": 2,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 3,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 4,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 5,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 6,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 28,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 29,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 30,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 31,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            },
+            {
+                "vertice": 32,
+                "angulo_graus": 90.0,
+                "raio_interno_mm": 10.0,
+                "espessura_mm": null,
+                "fator_k": null,
+                "bend_allowance_mm": null,
+                "bend_deduction_mm": null
+            }
+        ],
+        "pendencias": [
+            "ESPESSURA_NAO_VALIDADA",
+            "FATOR_K_NAO_DEFINIDO",
+            "FATOR_DE_DOBRA_NAO_DEFINIDO",
+            "METODO_DE_FABRICACAO_NAO_DEFINIDO"
+        ],
+        "observacao": "O cálculo definitivo do blank permanece bloqueado enquanto os parâmetros de fabricação não estiverem suficientemente definidos."
+    },
+    "regra_engenharia": "Dimensão geométrica ≠ dimensão de corte. A V2 utiliza evidências existentes nos diagnósticos anteriores, mas não inventa fator K, método de fabricação ou confirmação definitiva das linhas de dobra."
+}

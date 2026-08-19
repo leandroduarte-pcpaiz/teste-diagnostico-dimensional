@@ -1,0 +1,126 @@
+﻿
+|   aizi_context.py
+|   diagnostico_I1044988.txt
+|   |       |   |   |   +---appearance_mode
+|   |       |   |   |   |   |   appearance_mode_base_class.py
+|   |       |   |   |   |   |   appearance_mode_tracker.py
+|   |       |   |   |   |           appearance_mode_base_class.cpython-314.pyc
+|   |       |   |   |   |           appearance_mode_tracker.cpython-314.pyc
+|   |       |   |   _pytesttester.py
+|   |       |   |   _pytesttester.pyi
+|   |       |   |   |   |   test_block_docstring.py
+|   |       |   |   |   |   test_docs.py
+|   |       |   |   |   |   +---block_docstring
+|   |       |   |   |   |   |   |   module_data_docstring.f90
+|   |       |   |   |           test_block_docstring.cpython-314.pyc
+|   |       |   |   |           test_docs.cpython-314.pyc
+|   |       |   |   |   _add_newdocs.py
+|   |       |   |   |   _add_newdocs.pyi
+|   |       |   |   |   _add_newdocs_scalars.py
+|   |       |   |   |   _add_newdocs_scalars.pyi
+|   |       |   |           _add_newdocs.cpython-314.pyc
+|   |       |   |           _add_newdocs_scalars.cpython-314.pyc
+|   |       |   |   |   _add_docstring.py
+|   |       |   |           _add_docstring.cpython-314.pyc
+|   |       |           _pytesttester.cpython-314.pyc
+|   |       |   |   |   apply.py
+|   |       |   |   |   shared_docs.py
+|   |       |   |   |   |   docstrings.py
+|   |       |   |   |           docstrings.cpython-314.pyc
+|   |       |   |           apply.cpython-314.pyc
+|   |       |   |           shared_docs.cpython-314.pyc
+|   |       |   |   |   |   arrow_parser_wrapper.py
+|   |       |   |   |   |   c_parser_wrapper.py
+|   |       |   |   |           arrow_parser_wrapper.cpython-314.pyc
+|   |       |   |   |           c_parser_wrapper.cpython-314.pyc
+|   |       |   |   +---apply
+|   |       |   |   |   |   test_frame_apply.py
+|   |       |   |   |   |   test_frame_apply_relabeling.py
+|   |       |   |   |   |   test_series_apply.py
+|   |       |   |   |   |   test_series_apply_relabeling.py
+|   |       |   |   |           test_frame_apply.cpython-314.pyc
+|   |       |   |   |           test_frame_apply_relabeling.cpython-314.pyc
+|   |       |   |   |           test_series_apply.cpython-314.pyc
+|   |       |   |   |           test_series_apply_relabeling.cpython-314.pyc
+|   |       |   |   |   |   test_apply.py
+|   |       |   |   |           test_apply.cpython-314.pyc
+|   |       |   |   |   |   |   test_append.py
+|   |       |   |   |   |           test_append.cpython-314.pyc
+|   |       |   |   |   |   |   test_append.py
+|   |       |   |   |   |           test_append.cpython-314.pyc
+|   |       |   |   |   |   |   test_append.py
+|   |       |   |   |   |   |   test_append_common.py
+|   |       |   |   |   |           test_append.cpython-314.pyc
+|   |       |   |   |   |           test_append_common.cpython-314.pyc
+|   |       |   |   |   |   test_apply.py
+|   |       |   |   |           test_apply.cpython-314.pyc
+|   |       |   |   |   _tester.py
+|   |       |   |           _tester.cpython-314.pyc
+|   |       |   |   |   |   appdirs.py
+|   |       |   |   |           appdirs.cpython-314.pyc
+|   |       |   |   |   |   filewrapper.py
+|   |       |   |   |   |   wrapper.py
+|   |       |   |   |           filewrapper.cpython-314.pyc
+|   |       |   |   |           wrapper.cpython-314.pyc
+|   |       |   |   |   |   |   _mapping.py
+|   |       |   |   |   |           _mapping.cpython-314.pyc
+|   |       |   |   |   |   |   _mapping.py
+|   |       |   |   |   |           _mapping.cpython-314.pyc
+|   |       |   |   |   |   |   _mapping.py
+|   |       |   |   |   |           _mapping.cpython-314.pyc
+|   |       |   |   _apply_pages.py
+|   |       |           _apply_pages.cpython-314.pyc
+|   |       |   |   |   |   apply.py
+|   |       |   |   |           apply.cpython-314.pyc
+|   |       |   |   |   mapped_collection.py
+|   |       |   |   |   mapper.py
+|   |       |   |           mapped_collection.cpython-314.pyc
+|   |       |   |           mapper.cpython-314.pyc
++---app
+|   |   teste_bom.py
+|   |   teste_cadastro.py
+|   +---database
+|   |   |   database.py
+|   |           database.cpython-314.pyc
+|   +---engineering
+|   |   |   calculadora_corte.py
+|   |   |   calculadora_desenvolvimento.py
+|   |   |   calculadora_materia_prima.py
+|   |   |   extrator_desenho.py
+|   |   |   extrator_dimensional.py
+|   |   |   motor_engenharia.py
+|   |   |   planejador_dimensional.py
+|   |   |   planejador_materiais.py
+|   |   +---docs
+|   |   |       AIZI_CONTEXT.md
+|   |           calculadora_corte.cpython-314.pyc
+|   |           calculadora_desenvolvimento.cpython-314.pyc
+|   |           calculadora_materia_prima.cpython-314.pyc
+|   |           extrator_desenho.cpython-314.pyc
+|   |           extrator_dimensional.cpython-314.pyc
+|   |           motor_engenharia.cpython-314.pyc
+|   |           planejador_dimensional.cpython-314.pyc
+|   |           planejador_materiais.cpython-314.pyc
+|   +---importadores
+|   |   |   importador_totvs.py
+|   |           importador_totvs.cpython-314.pyc
+|   |   |   teste_scanner.py
+|   +---teste
+|   |   |   diagnostico_desenho.py
+|   |   |   teste_interpretador_fabricacao.py
+|   |   |   teste_planejador.py
+|   |           diagnostico_desenho.cpython-314.pyc
+|   |           teste_interpretador_fabricacao.cpython-314.pyc
+|   |           teste_planejador.cpython-314.pyc
+|           teste_bom.cpython-314.pyc
+|           teste_cadastro.cpython-314.pyc
+|           teste_scanner.cpython-314.pyc
+|       aizi.db
++---diagnostico
+|       _I1044988_diagnostico.json
++---docs
+|   |   AIZI_CONTEXT.md
+|   |   AIZI_CONTEXT_COMPLETO.md
+|   \---AIZI
+
+
