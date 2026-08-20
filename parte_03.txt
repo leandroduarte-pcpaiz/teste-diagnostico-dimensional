@@ -1,0 +1,1575 @@
+            candidato.altura_pdf,
+        )
+        /
+        max(
+            min(
+                candidato.largura_pdf,
+                candidato.altura_pdf,
+            ),
+            0.0001,
+        )
+    )
+
+    if proporcao < 2.5:
+
+        alongados = [
+            c
+            for c in melhores
+            if (
+                max(
+                    c.largura_pdf,
+                    c.altura_pdf,
+                )
+                /
+                max(
+                    min(
+                        c.largura_pdf,
+                        c.altura_pdf,
+                    ),
+                    0.0001,
+                )
+                >= 2.5
+            )
+        ]
+
+        if alongados:
+
+            candidato = alongados[0]
+
+    candidato.componente = "046"
+
+    return candidato
+
+
+# =============================================================================
+# CLASSIFICAR SEGMENTO
+# =============================================================================
+
+def classificar_segmento(
+    segmento: Segmento,
+) -> str:
+
+    comprimento = (
+        segmento.comprimento
+    )
+
+    if comprimento < 0.5:
+        return "AUXILIAR"
+
+    angulo = (
+        abs(
+            segmento.angulo
+        )
+        %
+        180
+    )
+
+    if (
+        abs(angulo) < 1
+        or
+        abs(angulo - 180) < 1
+        or
+        abs(angulo - 90) < 1
+    ):
+
+        return "RETO"
+
+    return "RETO_INCLINADO"
+
+
+# =============================================================================
+# SEGMENTOS EM MM
+# =============================================================================
+
+def segmentos_em_mm(
+    contorno: Contorno,
+) -> List[dict]:
+
+    resultado = []
+
+    for i, s in enumerate(
+        contorno.segmentos,
+        start=1,
+    ):
+
+        resultado.append(
+            {
+                "segmento":
+                    i,
+
+                "x1_mm":
+                    round(
+                        s.x1 *
+                        contorno.escala,
+                        4,
+                    ),
+
+                "y1_mm":
+                    round(
+                        s.y1 *
+                        contorno.escala,
+                        4,
+                    ),
+
+                "x2_mm":
+                    round(
+                        s.x2 *
+                        contorno.escala,
+                        4,
+                    ),
+
+                "y2_mm":
+                    round(
+                        s.y2 *
+                        contorno.escala,
+                        4,
+                    ),
+
+                "comprimento_mm":
+                    round(
+                        s.comprimento *
+                        contorno.escala,
+                        4,
+                    ),
+
+                "angulo_graus":
+                    round(
+                        s.angulo,
+                        4,
+                    ),
+
+                "tipo":
+                    classificar_segmento(
+                        s
+                    ),
+            }
+        )
+
+    return resultado
+
+
+# =============================================================================
+# JSON CALCULADORA CORTE
+# =============================================================================
+
+def gerar_json_calculadora_corte(
+    caminho: Path,
+    contorno: Contorno,
+    dobras: List[Dobra],
+    blank: Blank,
+    espessura_mm: Optional[float],
+    desenvolvimento_detalhes: dict,
+):
+
+    dados = {
+
+        "origem": {
+
+            "tipo":
+                "PDF",
+
+            "arquivo":
+                str(caminho),
+        },
+
+        "componente":
+            "046",
+
+        "geometria": {
+
+            "largura_mm":
+                round(
+                    contorno.largura_mm,
+                    4,
+                ),
+
+            "altura_mm":
+                round(
+                    contorno.altura_mm,
+                    4,
+                ),
+
+            "area_mm2":
+                round(
+                    contorno.area_mm2,
+                    4,
+                ),
+
+            "perimetro_mm":
+                round(
+                    contorno.perimetro_mm,
+                    4,
+                ),
+
+            "vertices":
+                contorno.vertices,
+
+            "segmentos":
+                len(
+                    contorno.segmentos
+                ),
+
+            "segmentos_retos":
+                len(
+                    contorno.segmentos
+                ),
+
+            "curvas":
+                0,
+
+            "escala":
+                round(
+                    contorno.escala,
+                    8,
+                ),
+
+            "score":
+                round(
+                    contorno.score,
+                    4,
+                ),
+        },
+
+        "material": {
+
+            "espessura_mm":
+                espessura_mm,
+        },
+
+        "dobras": [
+
+            {
+                "numero":
+                    d.numero,
+
+                "angulo_graus":
+                    d.angulo,
+
+                "raio_mm":
+                    d.raio,
+
+                "posicao_mm":
+                    d.posicao_mm,
+
+                "direcao":
+                    d.direcao,
+
+                "confianca":
+                    d.confianca,
+
+                "origem":
+                    d.origem,
+            }
+
+            for d in dobras
+        ],
+
+        "desenvolvimento": {
+
+            "status":
+                desenvolvimento_detalhes.get(
+                    "status"
+                ),
+
+            "metodo":
+                desenvolvimento_detalhes.get(
+                    "metodo"
+                ),
+
+            "comprimento_estimado_mm":
+                round(
+                    blank.comprimento_desenvolvido_mm,
+                    4,
+                ),
+
+            "detalhes":
+                desenvolvimento_detalhes,
+        },
+
+        "blank": {
+
+            "largura_mm":
+                round(
+                    blank.largura_blank_mm,
+                    4,
+                ),
+
+            "comprimento_mm":
+                round(
+                    blank.comprimento_blank_mm,
+                    4,
+                ),
+
+            "espessura_mm":
+                blank.espessura_mm,
+
+            "formato":
+                "RETANGULAR",
+
+            "metodo":
+                blank.metodo,
+
+            "valido":
+                blank.valido,
+        },
+
+        "geometria_mm":
+            segmentos_em_mm(
+                contorno
+            ),
+
+        "calculadora_corte": {
+
+            "entrada_valida":
+                blank.valido,
+
+            "largura_peca_mm":
+                round(
+                    blank.largura_blank_mm,
+                    4,
+                ),
+
+            "comprimento_peca_mm":
+                round(
+                    blank.comprimento_blank_mm,
+                    4,
+                ),
+
+            "espessura_mm":
+                espessura_mm,
+
+            "quantidade":
+                1,
+        },
+    }
+
+    with open(
+        caminho,
+        "w",
+        encoding="utf-8",
+    ) as arquivo:
+
+        json.dump(
+            dados,
+            arquivo,
+            indent=4,
+            ensure_ascii=False,
+        )
+
+
+# =============================================================================
+# RELATÓRIO TXT
+# =============================================================================
+
+def gerar_relatorio(
+    caminho_pdf: Path,
+    caminho_txt: Path,
+    contorno: Contorno,
+    dobras: List[Dobra],
+    blank: Blank,
+    espessura_mm: Optional[float],
+    desenvolvimento_detalhes: dict,
+    textos: List[dict],
+):
+
+    linhas = []
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "AIZI ENGINEERING AI"
+    )
+    linhas.append(
+        "DIAGNÓSTICO DE DESENHO TÉCNICO"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append("")
+    linhas.append(
+        f"Arquivo: {caminho_pdf}"
+    )
+
+    linhas.append(
+        f"Componente identificado: "
+        f"{contorno.componente}"
+    )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # GEOMETRIA
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "GEOMETRIA PRINCIPAL"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Largura: "
+        f"{contorno.largura_mm:.4f} mm"
+    )
+
+    linhas.append(
+        f"Altura: "
+        f"{contorno.altura_mm:.4f} mm"
+    )
+
+    linhas.append(
+        f"Área: "
+        f"{contorno.area_mm2:.4f} mm²"
+    )
+
+    linhas.append(
+        f"Perímetro: "
+        f"{contorno.perimetro_mm:.4f} mm"
+    )
+
+    linhas.append(
+        f"Vértices: "
+        f"{contorno.vertices}"
+    )
+
+    linhas.append(
+        f"Segmentos: "
+        f"{len(contorno.segmentos)}"
+    )
+
+    linhas.append(
+        f"Escala: "
+        f"{contorno.escala:.8f}"
+    )
+
+    linhas.append(
+        f"Score: "
+        f"{contorno.score:.2f}"
+    )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # SEGMENTOS
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "SEGMENTOS"
+    )
+    linhas.append("=" * 80)
+
+    for item in segmentos_em_mm(
+        contorno
+    ):
+
+        linhas.append(
+            (
+                f"{item['segmento']:03d} | "
+                f"({item['x1_mm']:.4f}, "
+                f"{item['y1_mm']:.4f}) -> "
+                f"({item['x2_mm']:.4f}, "
+                f"{item['y2_mm']:.4f}) | "
+                f"L={item['comprimento_mm']:.4f} mm | "
+                f"Ângulo={item['angulo_graus']:.2f}° | "
+                f"{item['tipo']}"
+            )
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # DETECÇÃO GEOMÉTRICA DAS DOBRAS
+    # -------------------------------------------------------------------------
+
+    deteccao = (
+        desenvolvimento_detalhes.get(
+            "deteccao_geometrica",
+            {},
+        )
+    )
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "DETECÇÃO GEOMÉTRICA DAS DOBRAS"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Eixo longitudinal: "
+        f"{deteccao.get('eixo_longitudinal', 'N/D')}"
+    )
+
+    linhas.append(
+        f"Eixo de desenvolvimento: "
+        f"{desenvolvimento_detalhes.get('eixo_desenvolvimento', 'N/D')}"
+    )
+
+    linhas.append(
+        f"Dimensão transversal: "
+        f"{deteccao.get('dimensao_transversal_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Linhas internas encontradas: "
+        f"{deteccao.get('quantidade', 0)}"
+    )
+
+    linhas.append(
+        f"Motivo: "
+        f"{deteccao.get('motivo', 'N/D')}"
+    )
+
+    linhas.append("")
+
+    linhas.append(
+        "CANDIDATOS GEOMÉTRICOS:"
+    )
+
+    for candidato in deteccao.get(
+        "candidatos",
+        [],
+    ):
+
+        linhas.append(
+            (
+                f"  posição="
+                f"{candidato.get('posicao_mm_desde_borda', 0):.4f} mm | "
+                f"comprimento="
+                f"{candidato.get('comprimento_total_mm', 0):.4f} mm | "
+                f"score="
+                f"{candidato.get('score', 0):.2f} | "
+                f"segmentos="
+                f"{candidato.get('quantidade_segmentos', 0)}"
+            )
+        )
+
+    linhas.append("")
+
+    linhas.append(
+        "LINHAS SELECIONADAS COMO DOBRAS:"
+    )
+
+    for linha in deteccao.get(
+        "linhas_selecionadas",
+        [],
+    ):
+
+        linhas.append(
+            (
+                f"  Dobra {linha.get('numero', 0):02d} | "
+                f"posição="
+                f"{linha.get('posicao_mm', 0):.4f} mm | "
+                f"comprimento="
+                f"{linha.get('comprimento_mm', 0):.4f} mm | "
+                f"score="
+                f"{linha.get('score', 0):.2f}"
+            )
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # PERFIL TRANSVERSAL
+    # -------------------------------------------------------------------------
+
+    perfil = (
+        desenvolvimento_detalhes.get(
+            "perfil_transversal",
+            {},
+        )
+    )
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "RECONSTRUÇÃO GEOMÉTRICA DAS ABAS"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Status: "
+        f"{perfil.get('status', 'N/D')}"
+    )
+
+    linhas.append(
+        f"Motivo: "
+        f"{perfil.get('motivo', 'N/D')}"
+    )
+
+    linhas.append(
+        f"Trilhos longitudinais encontrados: "
+        f"{perfil.get('quantidade_trilhos', len(perfil.get('trilhos', [])))}"
+    )
+
+    linhas.append("")
+
+    linhas.append(
+        "TRILHOS LONGITUDINAIS:"
+    )
+
+    for trilho in perfil.get(
+        "trilhos",
+        [],
+    ):
+
+        linhas.append(
+            (
+                f"  Trilho {trilho.get('numero', 0):02d} | "
+                f"posição transversal="
+                f"{trilho.get('coordenada_media_mm', 0):.4f} mm | "
+                f"comprimento máximo="
+                f"{trilho.get('comprimento_maximo_mm', 0):.4f} mm | "
+                f"segmentos="
+                f"{trilho.get('quantidade_segmentos', 0)}"
+            )
+        )
+
+    linhas.append("")
+
+    linhas.append(
+        "REGIÕES TRANSVERSAIS:"
+    )
+
+    regioes = perfil.get(
+        "regioes_externas_mm",
+        [],
+    )
+
+    if len(regioes) == 3:
+
+        linhas.append(
+            f"  Região 1: {regioes[0]:.4f} mm"
+        )
+
+        linhas.append(
+            f"  Região 2: {regioes[1]:.4f} mm"
+        )
+
+        linhas.append(
+            f"  Região 3: {regioes[2]:.4f} mm"
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # DOBRAS
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "DOBRAS IDENTIFICADAS"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Quantidade de dobras: "
+        f"{len(dobras)}"
+    )
+
+    for d in dobras:
+
+        raio = (
+            f"{d.raio:.4f} mm"
+            if d.raio is not None
+            else "N/D"
+        )
+
+        posicao = (
+            f"{d.posicao_mm:.4f} mm"
+            if d.posicao_mm is not None
+            else "N/D"
+        )
+
+        linhas.append(
+            (
+                f"Dobra {d.numero:02d} | "
+                f"Ângulo={d.angulo:.2f}° | "
+                f"Raio={raio} | "
+                f"Posição={posicao} | "
+                f"Confiança={d.confianca:.2f} | "
+                f"Origem={d.origem}"
+            )
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # SEQUÊNCIA
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "SEQUÊNCIA REAL DO DESENVOLVIMENTO"
+    )
+    linhas.append("=" * 80)
+
+    sequencia = (
+        desenvolvimento_detalhes.get(
+            "sequencia",
+            [],
+        )
+    )
+
+    if not sequencia:
+
+        linhas.append(
+            "DESENVOLVIMENTO NÃO CALCULADO."
+        )
+
+    else:
+
+        for i, item in enumerate(
+            sequencia,
+            start=1,
+        ):
+
+            tipo = item.get(
+                "tipo",
+                "",
+            )
+
+            comprimento = item.get(
+                "comprimento_mm",
+                0,
+            )
+
+            if tipo == "ABA":
+
+                linhas.append(
+                    (
+                        f"{i:02d} | "
+                        f"ABA {item.get('numero', '')} | "
+                        f"{comprimento:.4f} mm | "
+                        f"Trecho externo="
+                        f"{item.get('trecho_externo_mm', 0):.4f} mm | "
+                        f"Origem="
+                        f"{item.get('origem', '')}"
+                    )
+                )
+
+            else:
+
+                linhas.append(
+                    (
+                        f"{i:02d} | "
+                        f"BA Dobra "
+                        f"{item.get('dobra', '')} | "
+                        f"{comprimento:.4f} mm | "
+                        f"A="
+                        f"{item.get('angulo_graus', 0):.2f}° | "
+                        f"R="
+                        f"{item.get('raio_mm', 0):.4f} mm | "
+                        f"K="
+                        f"{item.get('fator_k', 0):.4f}"
+                    )
+                )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # DESENVOLVIMENTO
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "DESENVOLVIMENTO"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Status: "
+        f"{desenvolvimento_detalhes.get('status', 'N/D')}"
+    )
+
+    linhas.append(
+        f"Método: "
+        f"{desenvolvimento_detalhes.get('metodo', '')}"
+    )
+
+    linhas.append(
+        f"Base geométrica transversal: "
+        f"{desenvolvimento_detalhes.get('base_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"BA total: "
+        f"{desenvolvimento_detalhes.get('bend_allowance_total_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"BD total: "
+        f"{desenvolvimento_detalhes.get('bend_deduction_total_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Desenvolvimento por sequência: "
+        f"{desenvolvimento_detalhes.get('desenvolvimento_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Conferência por BD: "
+        f"{desenvolvimento_detalhes.get('desenvolvimento_por_bd_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Diferença entre métodos: "
+        f"{desenvolvimento_detalhes.get('diferenca_entre_metodos_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Erro de fechamento: "
+        f"{desenvolvimento_detalhes.get('erro_fechamento_mm', 0):.8f} mm"
+    )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # DETALHAMENTO BA / BD
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "DETALHAMENTO BA / BD / SETBACK"
+    )
+    linhas.append("=" * 80)
+
+    for item in desenvolvimento_detalhes.get(
+        "detalhes",
+        [],
+    ):
+
+        linhas.append(
+            (
+                f"Dobra {item['dobra']:02d} | "
+                f"A={item['angulo_graus']:.2f}° | "
+                f"R={item['raio_mm']:.4f} mm | "
+                f"T={item['espessura_mm']:.4f} mm | "
+                f"R/T={item['razao_raio_espessura']:.4f} | "
+                f"K={item['fator_k']:.4f} | "
+                f"Setback={item['setback_mm']:.4f} mm | "
+                f"BA={item['bend_allowance_mm']:.4f} mm | "
+                f"BD={item['bend_deduction_mm']:.4f} mm | "
+                f"Posição={item.get('posicao_mm', 'N/D')}"
+            )
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # ABAS
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "ABAS RECONSTRUÍDAS"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        f"Aba 1: "
+        f"{desenvolvimento_detalhes.get('aba_1_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Aba 2: "
+        f"{desenvolvimento_detalhes.get('aba_2_mm', 0):.4f} mm"
+    )
+
+    linhas.append(
+        f"Aba 3: "
+        f"{desenvolvimento_detalhes.get('aba_3_mm', 0):.4f} mm"
+    )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # BLANK
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "BLANK"
+    )
+    linhas.append("=" * 80)
+
+    if blank.valido:
+
+        linhas.append(
+            f"Largura do blank: "
+            f"{blank.largura_blank_mm:.4f} mm"
+        )
+
+        linhas.append(
+            f"Comprimento do blank: "
+            f"{blank.comprimento_blank_mm:.4f} mm"
+        )
+
+        linhas.append(
+            f"Espessura: "
+            f"{espessura_mm if espessura_mm is not None else 'N/D'} mm"
+        )
+
+        linhas.append(
+            "Formato: RETANGULAR"
+        )
+
+        linhas.append(
+            f"Método: "
+            f"{blank.metodo}"
+        )
+
+    else:
+
+        linhas.append(
+            "BLANK NÃO CALCULADO."
+        )
+
+        linhas.append(
+            "Motivo: geometria insuficiente para reconstrução segura."
+        )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # CALCULADORA
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "ENTRADA PARA CALCULADORA_CORTE.PY"
+    )
+    linhas.append("=" * 80)
+
+    linhas.append(
+        "componente = 046"
+    )
+
+    linhas.append(
+        f"entrada_valida = "
+        f"{blank.valido}"
+    )
+
+    linhas.append(
+        f"largura_mm = "
+        f"{blank.largura_blank_mm:.4f}"
+    )
+
+    linhas.append(
+        f"comprimento_mm = "
+        f"{blank.comprimento_blank_mm:.4f}"
+    )
+
+    linhas.append(
+        f"espessura_mm = "
+        f"{espessura_mm if espessura_mm is not None else 'None'}"
+    )
+
+    linhas.append(
+        "quantidade = 1"
+    )
+
+    linhas.append("")
+
+    # -------------------------------------------------------------------------
+    # FIM
+    # -------------------------------------------------------------------------
+
+    linhas.append("=" * 80)
+    linhas.append(
+        "FIM DO DIAGNÓSTICO"
+    )
+    linhas.append("=" * 80)
+
+    with open(
+        caminho_txt,
+        "w",
+        encoding="utf-8",
+    ) as arquivo:
+
+        arquivo.write(
+            "\n".join(linhas)
+        )
+
+
+# =============================================================================
+# IMPRESSÃO
+# =============================================================================
+
+def imprimir_resultado(
+    contorno: Contorno,
+    dobras: List[Dobra],
+    blank: Blank,
+    caminho_txt: Path,
+    caminho_json: Path,
+    desenvolvimento_detalhes: dict,
+):
+
+    print("=" * 80)
+    print(
+        "AIZI ENGINEERING AI"
+    )
+    print(
+        "DIAGNÓSTICO FINAL"
+    )
+    print("=" * 80)
+
+    print(
+        f"Componente: "
+        f"{contorno.componente}"
+    )
+
+    print(
+        f"Dimensão estimada: "
+        f"{contorno.largura_mm:.4f} x "
+        f"{contorno.altura_mm:.4f} mm"
+    )
+
+    print(
+        f"Área: "
+        f"{contorno.area_mm2:.4f} mm²"
+    )
+
+    print(
+        f"Perímetro: "
+        f"{contorno.perimetro_mm:.4f} mm"
+    )
+
+    print(
+        f"Vértices: "
+        f"{contorno.vertices}"
+    )
+
+    print(
+        f"Segmentos retos: "
+        f"{len(contorno.segmentos)}"
+    )
+
+    print(
+        f"Dobras identificadas: "
+        f"{len(dobras)}"
+    )
+
+    for dobra in dobras:
+
+        raio = (
+            f"R{dobra.raio:.2f}"
+            if dobra.raio is not None
+            else "R=N/D"
+        )
+
+        posicao = (
+            f"{dobra.posicao_mm:.4f}"
+            if dobra.posicao_mm is not None
+            else "N/D"
+        )
+
+        print(
+            f"  Dobra {dobra.numero}: "
+            f"{dobra.angulo:.1f}° "
+            f"{raio} "
+            f"Posição={posicao} mm"
+        )
+
+    print("")
+
+    print(
+        "DETECÇÃO GEOMÉTRICA:"
+    )
+
+    print(
+        f"  Status: "
+        f"{desenvolvimento_detalhes.get('status', 'N/D')}"
+    )
+
+    print(
+        f"  Método: "
+        f"{desenvolvimento_detalhes.get('metodo', 'N/D')}"
+    )
+
+    print("")
+
+    print(
+        "RECONSTRUÇÃO DAS ABAS:"
+    )
+
+    print(
+        f"  Aba 1: "
+        f"{desenvolvimento_detalhes.get('aba_1_mm', 0):.4f} mm"
+    )
+
+    print(
+        f"  Aba 2: "
+        f"{desenvolvimento_detalhes.get('aba_2_mm', 0):.4f} mm"
+    )
+
+    print(
+        f"  Aba 3: "
+        f"{desenvolvimento_detalhes.get('aba_3_mm', 0):.4f} mm"
+    )
+
+    print("")
+
+    print(
+        "BA:"
+    )
+
+    for detalhe in desenvolvimento_detalhes.get(
+        "detalhes",
+        [],
+    ):
+
+        print(
+            f"  Dobra {detalhe['dobra']}: "
+            f"K={detalhe['fator_k']:.4f} | "
+            f"BA={detalhe['bend_allowance_mm']:.4f} mm"
+        )
+
+    print("")
+
+    if blank.valido:
+
+        print(
+            f"Desenvolvimento: "
+            f"{blank.comprimento_desenvolvido_mm:.4f} mm"
+        )
+
+        print(
+            f"Blank: "
+            f"{blank.largura_blank_mm:.4f} x "
+            f"{blank.comprimento_blank_mm:.4f} mm"
+        )
+
+    else:
+
+        print(
+            "Desenvolvimento: "
+            "NÃO CALCULADO"
+        )
+
+        print(
+            "Blank: "
+            "NÃO CALCULADO"
+        )
+
+    print("")
+
+    print(
+        "Diagnóstico salvo em:"
+    )
+
+    print(
+        caminho_txt
+    )
+
+    print("")
+
+    print(
+        "JSON para calculadora_corte salvo em:"
+    )
+
+    print(
+        caminho_json
+    )
+
+    print("")
+
+
+# =============================================================================
+# PROCESSAMENTO PRINCIPAL
+# =============================================================================
+
+def processar(
+    caminho_pdf: str,
+):
+
+    caminho = Path(
+        caminho_pdf
+    )
+
+    if not caminho.exists():
+
+        raise FileNotFoundError(
+            f"Arquivo não encontrado: "
+            f"{caminho}"
+        )
+
+    print("=" * 80)
+    print(
+        "AIZI ENGINEERING AI"
+    )
+    print(
+        "DIAGNÓSTICO DE DESENHO"
+    )
+    print("=" * 80)
+
+    print(
+        f"Arquivo: {caminho}"
+    )
+
+    documento = pymupdf.open(
+        caminho
+    )
+
+    todos_segmentos = []
+    todos_textos = []
+
+    for numero_pagina, pagina in enumerate(
+        documento,
+        start=1,
+    ):
+
+        print(
+            f"Processando página "
+            f"{numero_pagina}..."
+        )
+
+        segmentos = extrair_linhas(
+            pagina
+        )
+
+        textos = extrair_textos(
+            pagina
+        )
+
+        todos_segmentos.extend(
+            segmentos
+        )
+
+        todos_textos.extend(
+            textos
+        )
+
+    documento.close()
+
+    print(
+        f"Linhas vetoriais encontradas: "
+        f"{len(todos_segmentos)}"
+    )
+
+    print(
+        f"Textos encontrados: "
+        f"{len(todos_textos)}"
+    )
+
+    # -------------------------------------------------------------------------
+    # CONTORNOS
+    # -------------------------------------------------------------------------
+
+    contornos = detectar_contornos(
+        todos_segmentos
+    )
+
+    print(
+        f"Contornos encontrados: "
+        f"{len(contornos)}"
+    )
+
+    if not contornos:
+
+        raise RuntimeError(
+            "Nenhum contorno fechado encontrado."
+        )
+
+    # -------------------------------------------------------------------------
+    # COMPONENTE 046
+    # -------------------------------------------------------------------------
+
+    principal = selecionar_046(
+        contornos
+    )
+
+    if principal is None:
+
+        raise RuntimeError(
+            "Não foi possível identificar "
+            "o contorno principal."
+        )
+
+    principal.componente = "046"
+
+    # -------------------------------------------------------------------------
+    # ESPESSURA
+    # -------------------------------------------------------------------------
+
+    espessura = identificar_espessura(
+        todos_textos
+    )
+
+    if espessura is None:
+
+        espessura = ESPESSURA_PADRAO
+
+    # -------------------------------------------------------------------------
+    # DOBRAS
+    # -------------------------------------------------------------------------
+
+    dobras, deteccao_geometrica = (
+        identificar_dobras(
+            todos_textos,
+            principal,
+            espessura,
+            todos_segmentos,
+        )
+    )
+
+    dobras = ordenar_dobras(
+        dobras
+    )
+
+    # -------------------------------------------------------------------------
+    # DESENVOLVIMENTO
+    # -------------------------------------------------------------------------
+
+    desenvolvimento, detalhes = (
+        estimar_desenvolvimento(
+            principal,
+            dobras,
+            espessura,
+            deteccao_geometrica,
+        )
+    )
+
+    # -------------------------------------------------------------------------
+    # BLANK
+    # -------------------------------------------------------------------------
+
+    blank = calcular_blank(
+        principal,
+        desenvolvimento,
+        espessura,
+        detalhes,
+    )
+
+    # -------------------------------------------------------------------------
+    # PASTA DE SAÍDA
+    # -------------------------------------------------------------------------
+
+    pasta_saida = (
+        caminho.parent /
+        caminho.stem
+    )
+
+    pasta_saida.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    caminho_txt = (
+        pasta_saida /
+        "_diagnostico.txt"
+    )
+
+    caminho_json = (
+        pasta_saida /
+        "_calculadora_corte.json"
+    )
+
+    # -------------------------------------------------------------------------
+    # TXT
+    # -------------------------------------------------------------------------
+
+    gerar_relatorio(
+        caminho,
+        caminho_txt,
+        principal,
+        dobras,
+        blank,
+        espessura,
+        detalhes,
+        todos_textos,
+    )
+
+    # -------------------------------------------------------------------------
+    # JSON
+    # -------------------------------------------------------------------------
+
+    gerar_json_calculadora_corte(
+        caminho_json,
+        principal,
+        dobras,
+        blank,
+        espessura,
+        detalhes,
+    )
+
+    # -------------------------------------------------------------------------
+    # RESULTADO
+    # -------------------------------------------------------------------------
+
+    imprimir_resultado(
+        principal,
+        dobras,
+        blank,
+        caminho_txt,
+        caminho_json,
+        detalhes,
+    )
+
+    return {
+
+        "componente":
+            "046",
+
+        "largura_mm":
+            principal.largura_mm,
+
+        "altura_mm":
+            principal.altura_mm,
+
+        "area_mm2":
+            principal.area_mm2,
+
+        "perimetro_mm":
+            principal.perimetro_mm,
+
+        "segmentos":
+            len(
+                principal.segmentos
+            ),
+
+        "dobras":
+            [
+                asdict(d)
+                for d in dobras
+            ],
+
+        "deteccao_geometrica":
+            deteccao_geometrica,
+
+        "desenvolvimento_mm":
+            blank.comprimento_desenvolvido_mm,
+
+        "desenvolvimento_detalhes":
+            detalhes,
+
+        "blank": {
+
+            "largura_mm":
+                blank.largura_blank_mm,
+
+            "comprimento_mm":
+                blank.comprimento_blank_mm,
+
+            "espessura_mm":
+                blank.espessura_mm,
+
+            "valido":
+                blank.valido,
+        },
+
+        "diagnostico":
+            str(caminho_txt),
+
+        "calculadora_corte":
+            str(caminho_json),
+    }
+
+
+# =============================================================================
+# LOCALIZAR PDF
+# =============================================================================
+
+def selecionar_pdf() -> Optional[str]:
+
+    try:
+
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+
+        root.withdraw()
+
+        caminho = (
+            filedialog.askopenfilename(
+                title=
+                    "Selecione o desenho técnico",
+
+                filetypes=[
+                    (
+                        "Arquivos PDF",
+                        "*.pdf",
+                    ),
+                    (
+                        "Todos os arquivos",
+                        "*.*",
+                    ),
+                ],
+            )
+        )
+
+        root.destroy()
+
+        if caminho:
+            return caminho
+
+    except Exception as erro:
+
+        print(
+            f"Não foi possível abrir seletor: "
+            f"{erro}"
+        )
+
+    return None
+
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
+if __name__ == "__main__":
+
+    try:
+
+        if len(sys.argv) > 1:
+
+            caminho = sys.argv[1]
+
+        else:
+
+            caminho = selecionar_pdf()
+
+            if not caminho:
+
+                print(
+                    "Nenhum arquivo selecionado."
+                )
+
+                sys.exit(0)
+
+        processar(
+            caminho
+        )
+
+        print("=" * 80)
+        print(
+            "PROCESSAMENTO FINALIZADO"
+        )
+        print("=" * 80)
+
+    except KeyboardInterrupt:
+
+        print(
+            "\nProcessamento cancelado."
+        )
+
+        sys.exit(1)
+
+    except Exception as erro:
+
+        print("")
+        print("=" * 80)
+        print(
+            "ERRO NO DIAGNÓSTICO"
+        )
+        print("=" * 80)
+
+        print(
+            f"{type(erro).__name__}: "
+            f"{erro}"
+        )
+
+        import traceback
+
+        traceback.print_exc()
+
+        sys.exit(1)
+

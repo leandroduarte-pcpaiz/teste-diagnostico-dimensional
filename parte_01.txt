@@ -1,0 +1,2000 @@
+# -*- coding: utf-8 -*-
+
+"""
+AIZI ENGINEERING AI
+DIAGNÓSTICO DE DESENHO TÉCNICO
+
+Objetivos:
+
+1. Ler desenho PDF.
+2. Extrair textos.
+3. Extrair linhas vetoriais.
+4. Identificar contornos fechados.
+5. Identificar automaticamente o contorno da peça.
+6. Validar contra dimensões conhecidas.
+7. Reconstruir geometria em mm.
+8. Identificar dobras.
+9. Identificar posição das dobras pela geometria.
+10. Calcular BA / BD.
+11. Reconstruir o desenvolvimento pelas abas reais.
+12. Calcular blank.
+13. Gerar diagnóstico TXT.
+14. Gerar JSON compatível com calculadora_corte.py.
+
+PRINCÍPIO DO DESENVOLVIMENTO:
+
+O desenvolvimento não deve ser obtido simplesmente de:
+
+    bounding_box - BD
+
+A geometria deve ser interpretada como:
+
+    ABA 1
+       +
+    DOBRA 1
+       +
+    ABA 2
+       +
+    DOBRA 2
+       +
+    ABA 3
+
+Para isso o algoritmo:
+
+1. identifica o eixo longitudinal;
+2. procura segmentos longitudinais reais do contorno;
+3. agrupa os segmentos por posição transversal;
+4. identifica as regiões retas;
+5. identifica as posições das dobras;
+6. calcula as abas;
+7. calcula BA individualmente;
+8. monta a sequência final;
+9. valida o fechamento geométrico.
+
+Para o componente 046:
+
+    Comprimento longitudinal ≈ 672 mm
+    Altura transversal      ≈ 163 mm
+
+    Dobra 1 ≈ 48.2704 mm
+    Dobra 2 ≈ 114.7761 mm
+
+    R = 10 mm
+    T = 6.35 mm
+    K = 0.38
+
+Resultado esperado:
+
+    Desenvolvimento ≈ 136.596 mm
+
+    Blank ≈ 136.596 x 672.002 mm
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import re
+import sys
+
+from dataclasses import dataclass, asdict
+from pathlib import Path
+from collections import defaultdict, deque
+from typing import Optional, List, Dict, Tuple
+
+
+# =============================================================================
+# PYMUPDF
+# =============================================================================
+
+try:
+    import pymupdf
+except ImportError:
+    import fitz as pymupdf
+
+
+# =============================================================================
+# CONFIGURAÇÕES
+# =============================================================================
+
+TOLERANCIA_PONTO = 0.35
+TOLERANCIA_CONTORNO = 0.75
+
+MIN_SEGMENTO = 0.05
+MIN_AREA_CONTORNO = 20.0
+
+MIN_LARGURA_PECA = 50.0
+MIN_ALTURA_PECA = 10.0
+
+MAX_COMPONENTES_CANDIDATOS = 100
+
+DIMENSAO_ALVO_LARGURA = 672.0
+DIMENSAO_ALVO_ALTURA = 163.0
+
+ESPESSURA_PADRAO = 6.35
+
+RAIO_PADRAO = 10.0
+ANGULO_PADRAO = 90.0
+
+QUANTIDADE_DOBRAS_PADRAO = 2
+
+TOLERANCIA_ANGULO_DOBRA = 4.0
+
+MIN_FRACAO_COMPRIMENTO_LINHA_DOBRA = 0.35
+
+TOLERANCIA_AGRUPAMENTO_DOBRA_MM = 2.0
+
+MIN_DISTANCIA_BORDA_DOBRA_MM = 2.0
+
+# Novo:
+# Para considerar um segmento como uma aresta longitudinal real,
+# ele precisa representar uma parcela significativa do comprimento
+# longitudinal da peça.
+MIN_FRACAO_SEGMENTO_LONGITUDINAL = 0.35
+
+# Tolerância para agrupar arestas longitudinais paralelas.
+TOLERANCIA_TRILHO_TRANSVERSAL_MM = 2.50
+
+# Diferença máxima aceitável para considerar dois trilhos como
+# pertencentes �  mesma flange pela espessura.
+TOLERANCIA_ESPESSURA_MM = 1.50
+
+# Tolerância para fechamento da reconstrução.
+TOLERANCIA_RECONSTRUCAO_MM = 0.20
+
+
+# =============================================================================
+# DATA CLASSES
+# =============================================================================
+
+@dataclass
+class Ponto:
+    x: float
+    y: float
+
+
+@dataclass
+class Segmento:
+    indice: int
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+    @property
+    def comprimento(self) -> float:
+        return math.hypot(
+            self.x2 - self.x1,
+            self.y2 - self.y1,
+        )
+
+    @property
+    def dx(self) -> float:
+        return self.x2 - self.x1
+
+    @property
+    def dy(self) -> float:
+        return self.y2 - self.y1
+
+    @property
+    def angulo(self) -> float:
+        return math.degrees(
+            math.atan2(
+                self.dy,
+                self.dx,
+            )
+        )
+
+
+@dataclass
+class Contorno:
+    componente: str
+    segmentos: List[Segmento]
+
+    largura_pdf: float = 0.0
+    altura_pdf: float = 0.0
+    area_pdf: float = 0.0
+    perimetro_pdf: float = 0.0
+
+    escala: float = 1.0
+
+    largura_mm: float = 0.0
+    altura_mm: float = 0.0
+    area_mm2: float = 0.0
+    perimetro_mm: float = 0.0
+
+    score: float = 0.0
+
+    @property
+    def vertices(self) -> int:
+        return len(self.segmentos) + 1
+
+
+@dataclass
+class Dobra:
+    numero: int
+    angulo: float
+    raio: Optional[float]
+    posicao_mm: Optional[float]
+    direcao: Optional[str]
+    confianca: float
+    origem: str
+
+
+@dataclass
+class Blank:
+    comprimento_desenvolvido_mm: float
+    largura_blank_mm: float
+    comprimento_blank_mm: float
+    espessura_mm: Optional[float]
+    metodo: str
+    valido: bool = True
+
+
+# =============================================================================
+# FUNÇÕES BÁSICAS
+# =============================================================================
+
+def distancia(
+    p1: Ponto,
+    p2: Ponto,
+) -> float:
+
+    return math.hypot(
+        p2.x - p1.x,
+        p2.y - p1.y,
+    )
+
+
+def ponto_proximo(
+    p1: Ponto,
+    p2: Ponto,
+    tolerancia: float = TOLERANCIA_PONTO,
+) -> bool:
+
+    return distancia(p1, p2) <= tolerancia
+
+
+def normalizar_componente(valor) -> str:
+
+    if valor is None:
+        return ""
+
+    texto = str(valor).strip()
+
+    numeros = re.findall(
+        r"\d+",
+        texto,
+    )
+
+    if not numeros:
+        return texto
+
+    return numeros[-1].zfill(3)
+
+
+def limpar_texto(
+    texto: str,
+) -> str:
+
+    if texto is None:
+        return ""
+
+    texto = texto.replace(
+        "\n",
+        " ",
+    )
+
+    texto = texto.replace(
+        "\r",
+        " ",
+    )
+
+    return re.sub(
+        r"\s+",
+        " ",
+        texto,
+    ).strip()
+
+
+# =============================================================================
+# DISTÂNCIA PONTO-LINHA
+# =============================================================================
+
+def distancia_ponto_segmento(
+    ponto: Ponto,
+    segmento: Segmento,
+) -> float:
+
+    x = ponto.x
+    y = ponto.y
+
+    x1 = segmento.x1
+    y1 = segmento.y1
+
+    x2 = segmento.x2
+    y2 = segmento.y2
+
+    dx = x2 - x1
+    dy = y2 - y1
+
+    if abs(dx) < 1e-12 and abs(dy) < 1e-12:
+        return math.hypot(
+            x - x1,
+            y - y1,
+        )
+
+    t = (
+        (x - x1) * dx +
+        (y - y1) * dy
+    ) / (
+        dx * dx +
+        dy * dy
+    )
+
+    t = max(
+        0.0,
+        min(
+            1.0,
+            t,
+        ),
+    )
+
+    px = x1 + t * dx
+    py = y1 + t * dy
+
+    return math.hypot(
+        x - px,
+        y - py,
+    )
+
+
+# =============================================================================
+# ÁREA DE POLÍGONO
+# =============================================================================
+
+def area_pontos(
+    pontos: List[Ponto],
+) -> float:
+
+    if len(pontos) < 3:
+        return 0.0
+
+    soma = 0.0
+
+    for i in range(len(pontos)):
+
+        p1 = pontos[i]
+
+        p2 = pontos[
+            (i + 1) % len(pontos)
+        ]
+
+        soma += (
+            p1.x * p2.y
+            -
+            p2.x * p1.y
+        )
+
+    return abs(soma) / 2.0
+
+
+# =============================================================================
+# CONTORNO -> PONTOS
+# =============================================================================
+
+def segmentos_para_pontos(
+    segmentos: List[Segmento],
+) -> List[Ponto]:
+
+    if not segmentos:
+        return []
+
+    restantes = segmentos.copy()
+
+    primeiro = restantes.pop(0)
+
+    pontos = [
+        Ponto(
+            primeiro.x1,
+            primeiro.y1,
+        )
+    ]
+
+    atual = Ponto(
+        primeiro.x2,
+        primeiro.y2,
+    )
+
+    pontos.append(atual)
+
+    while restantes:
+
+        encontrado = None
+        proximo = None
+
+        for i, seg in enumerate(restantes):
+
+            p_inicio = Ponto(
+                seg.x1,
+                seg.y1,
+            )
+
+            p_fim = Ponto(
+                seg.x2,
+                seg.y2,
+            )
+
+            if ponto_proximo(
+                atual,
+                p_inicio,
+            ):
+
+                encontrado = i
+                proximo = p_fim
+                break
+
+            if ponto_proximo(
+                atual,
+                p_fim,
+            ):
+
+                encontrado = i
+                proximo = p_inicio
+                break
+
+        if encontrado is None:
+            break
+
+        restantes.pop(encontrado)
+
+        pontos.append(
+            proximo
+        )
+
+        atual = proximo
+
+    return pontos
+
+
+# =============================================================================
+# BOUNDING BOX
+# =============================================================================
+
+def bounding_box_segmentos(
+    segmentos: List[Segmento],
+) -> Tuple[
+    float,
+    float,
+    float,
+    float,
+]:
+
+    if not segmentos:
+        return (
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        )
+
+    xs = []
+    ys = []
+
+    for s in segmentos:
+
+        xs.append(s.x1)
+        xs.append(s.x2)
+
+        ys.append(s.y1)
+        ys.append(s.y2)
+
+    return (
+        min(xs),
+        min(ys),
+        max(xs),
+        max(ys),
+    )
+
+
+# =============================================================================
+# CONECTIVIDADE
+# =============================================================================
+
+def chave_ponto(
+    x: float,
+    y: float,
+    tolerancia: float = TOLERANCIA_PONTO,
+):
+
+    return (
+        round(x / tolerancia),
+        round(y / tolerancia),
+    )
+
+
+def agrupar_segmentos_conectados(
+    segmentos: List[Segmento],
+) -> List[List[Segmento]]:
+
+    if not segmentos:
+        return []
+
+    pontos = defaultdict(list)
+
+    for i, seg in enumerate(segmentos):
+
+        pontos[
+            chave_ponto(
+                seg.x1,
+                seg.y1,
+            )
+        ].append(i)
+
+        pontos[
+            chave_ponto(
+                seg.x2,
+                seg.y2,
+            )
+        ].append(i)
+
+    visitados = set()
+
+    grupos = []
+
+    for inicio in range(
+        len(segmentos)
+    ):
+
+        if inicio in visitados:
+            continue
+
+        fila = deque([inicio])
+
+        visitados.add(inicio)
+
+        grupo = []
+
+        while fila:
+
+            atual = fila.popleft()
+
+            grupo.append(
+                segmentos[atual]
+            )
+
+            seg = segmentos[atual]
+
+            chaves = [
+                chave_ponto(
+                    seg.x1,
+                    seg.y1,
+                ),
+                chave_ponto(
+                    seg.x2,
+                    seg.y2,
+                ),
+            ]
+
+            vizinhos = set()
+
+            for chave in chaves:
+
+                for idx in pontos[chave]:
+                    vizinhos.add(idx)
+
+            for idx in vizinhos:
+
+                if idx not in visitados:
+
+                    visitados.add(idx)
+
+                    fila.append(idx)
+
+        grupos.append(grupo)
+
+    return grupos
+
+
+# =============================================================================
+# CONTORNO FECHADO
+# =============================================================================
+
+def contorno_fechado(
+    segmentos: List[Segmento],
+    tolerancia: float = TOLERANCIA_PONTO,
+) -> bool:
+
+    if len(segmentos) < 3:
+        return False
+
+    extremos = []
+
+    for s in segmentos:
+
+        extremos.append(
+            Ponto(
+                s.x1,
+                s.y1,
+            )
+        )
+
+        extremos.append(
+            Ponto(
+                s.x2,
+                s.y2,
+            )
+        )
+
+    grupos = []
+
+    for p in extremos:
+
+        encontrado = False
+
+        for grupo in grupos:
+
+            if ponto_proximo(
+                p,
+                grupo[0],
+                tolerancia,
+            ):
+
+                grupo.append(p)
+
+                encontrado = True
+                break
+
+        if not encontrado:
+            grupos.append([p])
+
+    for grupo in grupos:
+
+        if len(grupo) < 2:
+            return False
+
+    return True
+
+
+# =============================================================================
+# CRIAR CONTORNO
+# =============================================================================
+
+def criar_contorno(
+    segmentos: List[Segmento],
+    componente: str,
+) -> Optional[Contorno]:
+
+    if len(segmentos) < 3:
+        return None
+
+    if not contorno_fechado(
+        segmentos
+    ):
+        return None
+
+    xmin, ymin, xmax, ymax = (
+        bounding_box_segmentos(
+            segmentos
+        )
+    )
+
+    largura = xmax - xmin
+    altura = ymax - ymin
+
+    if (
+        largura < MIN_ALTURA_PECA
+        or
+        altura < MIN_ALTURA_PECA
+    ):
+        return None
+
+    pontos = segmentos_para_pontos(
+        segmentos
+    )
+
+    if len(pontos) < 3:
+        return None
+
+    area = area_pontos(
+        pontos
+    )
+
+    if area < MIN_AREA_CONTORNO:
+        return None
+
+    perimetro = sum(
+        s.comprimento
+        for s in segmentos
+    )
+
+    return Contorno(
+        componente=normalizar_componente(
+            componente
+        ),
+        segmentos=segmentos,
+        largura_pdf=largura,
+        altura_pdf=altura,
+        area_pdf=area,
+        perimetro_pdf=perimetro,
+    )
+
+
+# =============================================================================
+# ESCALA
+# =============================================================================
+
+def calcular_escala(
+    contorno: Contorno,
+    alvo_largura: float,
+    alvo_altura: float,
+) -> Tuple[
+    float,
+    float,
+    float,
+]:
+
+    largura = contorno.largura_pdf
+    altura = contorno.altura_pdf
+
+    if largura <= 0 or altura <= 0:
+
+        return (
+            0.0,
+            999999.0,
+            999999.0,
+        )
+
+    erro_normal = (
+        abs(
+            largura - alvo_largura
+        )
+        /
+        alvo_largura
+        +
+        abs(
+            altura - alvo_altura
+        )
+        /
+        alvo_altura
+    )
+
+    erro_rotacionado = (
+        abs(
+            largura - alvo_altura
+        )
+        /
+        alvo_altura
+        +
+        abs(
+            altura - alvo_largura
+        )
+        /
+        alvo_largura
+    )
+
+    if erro_rotacionado < erro_normal:
+
+        escala = (
+            alvo_largura / altura
+            +
+            alvo_altura / largura
+        ) / 2.0
+
+        estimada_largura = (
+            altura * escala
+        )
+
+        estimada_altura = (
+            largura * escala
+        )
+
+    else:
+
+        escala = (
+            alvo_largura / largura
+            +
+            alvo_altura / altura
+        ) / 2.0
+
+        estimada_largura = (
+            largura * escala
+        )
+
+        estimada_altura = (
+            altura * escala
+        )
+
+    erro_dimensao = (
+        abs(
+            estimada_largura -
+            alvo_largura
+        )
+        /
+        alvo_largura
+        +
+        abs(
+            estimada_altura -
+            alvo_altura
+        )
+        /
+        alvo_altura
+    ) / 2.0
+
+    proporcao_pdf = (
+        largura / altura
+    )
+
+    proporcao_alvo = (
+        alvo_largura / alvo_altura
+    )
+
+    erro_proporcao_pdf = (
+        abs(
+            proporcao_pdf -
+            proporcao_alvo
+        )
+        /
+        proporcao_alvo
+    )
+
+    return (
+        escala,
+        erro_proporcao_pdf,
+        erro_dimensao,
+    )
+
+
+# =============================================================================
+# SCORE
+# =============================================================================
+
+def pontuar_contorno(
+    contorno: Contorno,
+    alvo_largura: float,
+    alvo_altura: float,
+) -> Contorno:
+
+    escala, erro_prop, erro_dim = (
+        calcular_escala(
+            contorno,
+            alvo_largura,
+            alvo_altura,
+        )
+    )
+
+    score = 0.0
+
+    if erro_prop <= 0.01:
+        score += 50
+
+    elif erro_prop <= 0.03:
+        score += 30
+
+    elif erro_prop <= 0.10:
+        score += 10
+
+    else:
+        score -= 40
+
+    if erro_dim <= 0.01:
+        score += 50
+
+    elif erro_dim <= 0.03:
+        score += 30
+
+    elif erro_dim <= 0.10:
+        score += 10
+
+    else:
+        score -= 40
+
+    if len(contorno.segmentos) >= 40:
+        score += 20
+
+    elif len(contorno.segmentos) >= 20:
+        score += 10
+
+    relacao = (
+        max(
+            contorno.largura_pdf,
+            contorno.altura_pdf,
+        )
+        /
+        max(
+            min(
+                contorno.largura_pdf,
+                contorno.altura_pdf,
+            ),
+            0.0001,
+        )
+    )
+
+    if relacao >= 3:
+        score += 10
+
+    contorno.score = score
+    contorno.escala = escala
+
+    largura_est = (
+        contorno.largura_pdf *
+        escala
+    )
+
+    altura_est = (
+        contorno.altura_pdf *
+        escala
+    )
+
+    erro_normal = (
+        abs(
+            largura_est -
+            alvo_largura
+        )
+        +
+        abs(
+            altura_est -
+            alvo_altura
+        )
+    )
+
+    largura_rot = (
+        contorno.altura_pdf *
+        escala
+    )
+
+    altura_rot = (
+        contorno.largura_pdf *
+        escala
+    )
+
+    erro_rot = (
+        abs(
+            largura_rot -
+            alvo_largura
+        )
+        +
+        abs(
+            altura_rot -
+            alvo_altura
+        )
+    )
+
+    if erro_rot < erro_normal:
+
+        contorno.largura_mm = largura_rot
+        contorno.altura_mm = altura_rot
+
+    else:
+
+        contorno.largura_mm = largura_est
+        contorno.altura_mm = altura_est
+
+    contorno.area_mm2 = (
+        contorno.area_pdf *
+        escala *
+        escala
+    )
+
+    contorno.perimetro_mm = (
+        contorno.perimetro_pdf *
+        escala
+    )
+
+    return contorno
+
+
+# =============================================================================
+# EXTRAÇÃO DE LINHAS
+# =============================================================================
+
+def extrair_linhas(
+    pagina,
+) -> List[Segmento]:
+
+    segmentos = []
+
+    desenhos = pagina.get_drawings()
+
+    contador = 0
+
+    for item in desenhos:
+
+        for elemento in item.get(
+            "items",
+            [],
+        ):
+
+            if not elemento:
+                continue
+
+            tipo = elemento[0]
+
+            if tipo != "l":
+                continue
+
+            p1 = elemento[1]
+            p2 = elemento[2]
+
+            x1 = float(p1.x)
+            y1 = float(p1.y)
+
+            x2 = float(p2.x)
+            y2 = float(p2.y)
+
+            comprimento = math.hypot(
+                x2 - x1,
+                y2 - y1,
+            )
+
+            if comprimento < MIN_SEGMENTO:
+                continue
+
+            segmentos.append(
+                Segmento(
+                    indice=contador,
+                    x1=x1,
+                    y1=y1,
+                    x2=x2,
+                    y2=y2,
+                )
+            )
+
+            contador += 1
+
+    return segmentos
+
+
+# =============================================================================
+# EXTRAÇÃO DE TEXTOS
+# =============================================================================
+
+def extrair_textos(
+    pagina,
+) -> List[dict]:
+
+    resultado = []
+
+    dados = pagina.get_text(
+        "dict"
+    )
+
+    for bloco in dados.get(
+        "blocks",
+        [],
+    ):
+
+        if "lines" not in bloco:
+            continue
+
+        for linha in bloco["lines"]:
+
+            for span in linha.get(
+                "spans",
+                [],
+            ):
+
+                texto = limpar_texto(
+                    span.get(
+                        "text",
+                        "",
+                    )
+                )
+
+                if not texto:
+                    continue
+
+                bbox = span.get(
+                    "bbox",
+                    None,
+                )
+
+                resultado.append(
+                    {
+                        "texto": texto,
+                        "x0": (
+                            bbox[0]
+                            if bbox
+                            else 0
+                        ),
+                        "y0": (
+                            bbox[1]
+                            if bbox
+                            else 0
+                        ),
+                        "x1": (
+                            bbox[2]
+                            if bbox
+                            else 0
+                        ),
+                        "y1": (
+                            bbox[3]
+                            if bbox
+                            else 0
+                        ),
+                    }
+                )
+
+    return resultado
+
+
+# =============================================================================
+# EXTRAIR NÚMEROS
+# =============================================================================
+
+def extrair_numeros_textuais(
+    textos: List[dict],
+) -> List[float]:
+
+    valores = []
+
+    padroes = [
+        r"(?<!\d)(\d+(?:[.,]\d+)?)\s*mm\b",
+        r"(?<!\d)(\d{2,5}(?:[.,]\d+)?)",
+    ]
+
+    for item in textos:
+
+        texto = item["texto"]
+
+        for padrao in padroes:
+
+            encontrados = re.findall(
+                padrao,
+                texto,
+                flags=re.IGNORECASE,
+            )
+
+            for valor in encontrados:
+
+                valor = valor.replace(
+                    ",",
+                    ".",
+                )
+
+                try:
+
+                    numero = float(valor)
+
+                    if 1 <= numero <= 10000:
+                        valores.append(numero)
+
+                except ValueError:
+                    pass
+
+    return valores
+
+
+# =============================================================================
+# IDENTIFICAR ESPESSURA
+# =============================================================================
+
+def identificar_espessura(
+    textos: List[dict],
+) -> Optional[float]:
+
+    padroes = [
+        r"(?:ESP|ESPESSURA|THK|T)\s*[:=]?\s*(\d+(?:[.,]\d+)?)",
+        r"(\d+(?:[.,]\d+)?)\s*MM\b",
+    ]
+
+    candidatos = []
+
+    for item in textos:
+
+        texto = item["texto"].upper()
+
+        for padrao in padroes:
+
+            encontrados = re.findall(
+                padrao,
+                texto,
+            )
+
+            for valor in encontrados:
+
+                try:
+
+                    numero = float(
+                        valor.replace(
+                            ",",
+                            ".",
+                        )
+                    )
+
+                    if 0.5 <= numero <= 30:
+                        candidatos.append(
+                            numero
+                        )
+
+                except ValueError:
+                    pass
+
+    if not candidatos:
+        return None
+
+    candidatos.sort(
+        key=lambda x: abs(
+            x - ESPESSURA_PADRAO
+        )
+    )
+
+    return candidatos[0]
+
+
+# =============================================================================
+# IDENTIFICAR ÂNGULOS
+# =============================================================================
+
+def extrair_angulos(
+    textos: List[dict],
+) -> List[float]:
+
+    encontrados = []
+
+    for item in textos:
+
+        texto = item["texto"].upper()
+
+        padroes = [
+            r"(\d+(?:[.,]\d+)?)\s*°",
+            r"(\d+(?:[.,]\d+)?)\s*º",
+            r"(\d+(?:[.,]\d+)?)\s*DEG",
+        ]
+
+        for padrao in padroes:
+
+            valores = re.findall(
+                padrao,
+                texto,
+            )
+
+            for valor in valores:
+
+                try:
+
+                    angulo = float(
+                        valor.replace(
+                            ",",
+                            ".",
+                        )
+                    )
+
+                    if 30 <= angulo <= 180:
+                        encontrados.append(
+                            angulo
+                        )
+
+                except ValueError:
+                    pass
+
+    return encontrados
+
+
+# =============================================================================
+# IDENTIFICAR RAIOS
+# =============================================================================
+
+def extrair_raios(
+    textos: List[dict],
+) -> List[float]:
+
+    encontrados = []
+
+    for item in textos:
+
+        texto = item["texto"].upper()
+
+        padroes = [
+            r"\bR\s*([0-9]+(?:[.,][0-9]+)?)",
+            r"\bRAIO\s*([0-9]+(?:[.,][0-9]+)?)",
+        ]
+
+        for padrao in padroes:
+
+            valores = re.findall(
+                padrao,
+                texto,
+            )
+
+            for valor in valores:
+
+                try:
+
+                    raio = float(
+                        valor.replace(
+                            ",",
+                            ".",
+                        )
+                    )
+
+                    if 0.5 <= raio <= 100:
+                        encontrados.append(
+                            raio
+                        )
+
+                except ValueError:
+                    pass
+
+    return encontrados
+
+
+# =============================================================================
+# FUNÇÕES GEOMÉTRICAS PARA DOBRAS
+# =============================================================================
+
+def angulo_diferenca(
+    a: float,
+    b: float,
+) -> float:
+
+    a = abs(a) % 180.0
+    b = abs(b) % 180.0
+
+    diferenca = abs(
+        a - b
+    )
+
+    return min(
+        diferenca,
+        180.0 - diferenca,
+    )
+
+
+def eixo_longitudinal(
+    contorno: Contorno,
+) -> str:
+
+    if (
+        contorno.largura_pdf
+        >=
+        contorno.altura_pdf
+    ):
+        return "X"
+
+    return "Y"
+
+
+def coordenada_transversal(
+    segmento: Segmento,
+    eixo_longitudinal: str,
+) -> float:
+
+    if eixo_longitudinal == "X":
+
+        return (
+            segmento.y1 +
+            segmento.y2
+        ) / 2.0
+
+    return (
+        segmento.x1 +
+        segmento.x2
+    ) / 2.0
+
+
+def coordenada_longitudinal(
+    segmento: Segmento,
+    eixo_longitudinal: str,
+) -> Tuple[float, float]:
+
+    if eixo_longitudinal == "X":
+
+        return (
+            min(
+                segmento.x1,
+                segmento.x2,
+            ),
+            max(
+                segmento.x1,
+                segmento.x2,
+            ),
+        )
+
+    return (
+        min(
+            segmento.y1,
+            segmento.y2,
+        ),
+        max(
+            segmento.y1,
+            segmento.y2,
+        ),
+    )
+
+
+# =============================================================================
+# NOVA FUNÇÃO:
+# IDENTIFICAR SEGMENTOS LONGITUDINAIS DO CONTORNO
+# =============================================================================
+
+def identificar_segmentos_longitudinais(
+    contorno: Contorno,
+) -> dict:
+
+    eixo = eixo_longitudinal(
+        contorno
+    )
+
+    escala = (
+        contorno.escala
+        if contorno.escala > 0
+        else 1.0
+    )
+
+    xmin, ymin, xmax, ymax = (
+        bounding_box_segmentos(
+            contorno.segmentos
+        )
+    )
+
+    if eixo == "X":
+
+        comprimento_total_pdf = (
+            xmax - xmin
+        )
+
+        comprimento_total_mm = (
+            comprimento_total_pdf *
+            escala
+        )
+
+        angulo_referencia = 0.0
+
+    else:
+
+        comprimento_total_pdf = (
+            ymax - ymin
+        )
+
+        comprimento_total_mm = (
+            comprimento_total_pdf *
+            escala
+        )
+
+        angulo_referencia = 90.0
+
+    candidatos = []
+
+    if comprimento_total_pdf <= 0:
+        return {
+            "eixo_longitudinal": eixo,
+            "comprimento_total_mm": 0.0,
+            "candidatos": [],
+            "trilhos": [],
+        }
+
+    for segmento in contorno.segmentos:
+
+        comprimento_pdf = (
+            segmento.comprimento
+        )
+
+        if comprimento_pdf <= 0:
+            continue
+
+        fracao = (
+            comprimento_pdf /
+            comprimento_total_pdf
+        )
+
+        if (
+            fracao <
+            MIN_FRACAO_SEGMENTO_LONGITUDINAL
+        ):
+            continue
+
+        diferenca = angulo_diferenca(
+            segmento.angulo,
+            angulo_referencia,
+        )
+
+        if diferenca > TOLERANCIA_ANGULO_DOBRA:
+            continue
+
+        coordenada = coordenada_transversal(
+            segmento,
+            eixo,
+        )
+
+        inicio, fim = coordenada_longitudinal(
+            segmento,
+            eixo,
+        )
+
+        candidatos.append(
+            {
+                "segmento_indice":
+                    segmento.indice,
+
+                "coordenada_transversal_pdf":
+                    coordenada,
+
+                "coordenada_transversal_mm":
+                    (
+                        coordenada -
+                        (
+                            ymin
+                            if eixo == "X"
+                            else xmin
+                        )
+                    ) * escala,
+
+                "inicio_longitudinal_pdf":
+                    inicio,
+
+                "fim_longitudinal_pdf":
+                    fim,
+
+                "comprimento_pdf":
+                    comprimento_pdf,
+
+                "comprimento_mm":
+                    comprimento_pdf * escala,
+
+                "fracao_comprimento":
+                    fracao,
+
+                "angulo_graus":
+                    segmento.angulo,
+
+                "diferenca_angular":
+                    diferenca,
+            }
+        )
+
+    candidatos.sort(
+        key=lambda item:
+            item[
+                "coordenada_transversal_mm"
+            ]
+    )
+
+    # -------------------------------------------------------------------------
+    # AGRUPAMENTO DOS TRILHOS
+    # -------------------------------------------------------------------------
+
+    trilhos = []
+
+    for candidato in candidatos:
+
+        coord = candidato[
+            "coordenada_transversal_mm"
+        ]
+
+        grupo = None
+
+        for trilho in trilhos:
+
+            if abs(
+                coord -
+                trilho[
+                    "coordenada_media_mm"
+                ]
+            ) <= TOLERANCIA_TRILHO_TRANSVERSAL_MM:
+
+                grupo = trilho
+                break
+
+        if grupo is None:
+
+            grupo = {
+                "coordenada_media_mm":
+                    coord,
+
+                "segmentos":
+                    [],
+
+                "comprimento_total_mm":
+                    0.0,
+            }
+
+            trilhos.append(
+                grupo
+            )
+
+        grupo["segmentos"].append(
+            candidato
+        )
+
+        grupo["comprimento_total_mm"] += (
+            candidato["comprimento_mm"]
+        )
+
+        grupo["coordenada_media_mm"] = (
+            sum(
+                item[
+                    "coordenada_transversal_mm"
+                ]
+                for item in grupo["segmentos"]
+            )
+            /
+            len(
+                grupo["segmentos"]
+            )
+        )
+
+    # -------------------------------------------------------------------------
+    # CLASSIFICAÇÃO DOS TRILHOS
+    # -------------------------------------------------------------------------
+
+    for numero, trilho in enumerate(
+        trilhos,
+        start=1,
+    ):
+
+        trilho["numero"] = numero
+
+        trilho["quantidade_segmentos"] = len(
+            trilho["segmentos"]
+        )
+
+        trilho["comprimento_maximo_mm"] = max(
+            (
+                item["comprimento_mm"]
+                for item in trilho["segmentos"]
+            ),
+            default=0.0,
+        )
+
+    return {
+        "eixo_longitudinal":
+            eixo,
+
+        "comprimento_total_mm":
+            comprimento_total_mm,
+
+        "candidatos":
+            candidatos,
+
+        "trilhos":
+            trilhos,
+    }
+
+
+# =============================================================================
+# RECONSTRUIR PERFIL TRANSVERSAL
+# =============================================================================
+
+def reconstruir_perfil_transversal(
+    contorno: Contorno,
+    dobras: List[Dobra],
+    espessura_mm: Optional[float],
+) -> dict:
+
+    """
+    Reconstrói as três regiões retas da peça a partir da geometria
+    longitudinal real do contorno.
+
+    A função NÃO utiliza:
+
+        1/3
+        2/3
+        39%
+        71%
+
+    Ela procura as arestas longitudinais reais.
+
+    O objetivo é produzir evidência geométrica para:
+
+        ABA 1
+        DOBRA 1
+        ABA 2
+        DOBRA 2
+        ABA 3
+
+    As posições das dobras continuam sendo obtidas das linhas internas.
+
+    A geometria longitudinal serve para validar que existem três
+    regiões físicas da peça e para fornecer a separação entre
+    as faces da chapa.
+    """
+
+    if espessura_mm is None:
+        espessura_mm = ESPESSURA_PADRAO
+
+    trilhos_info = identificar_segmentos_longitudinais(
+        contorno
+    )
+
+    trilhos = trilhos_info[
+        "trilhos"
+    ]
+
+    if len(trilhos) < 3:
+
+        return {
+            "status":
+                "GEOMETRIA_INSUFICIENTE",
+
+            "motivo":
+                "MENOS_DE_TRES_TRILHOS_LONGITUDINAIS",
+
+            "trilhos":
+                trilhos,
+
+            "quantidade_trilhos":
+                len(trilhos),
+
+            "abas_identificadas":
+                [],
+        }
+
+    # -------------------------------------------------------------------------
+    # Cada flange de uma chapa dobrada aparece como duas faces.
+    #
+    # Procuramos pares de trilhos separados aproximadamente pela espessura.
+    # -------------------------------------------------------------------------
+
+    pares_espessura = []
+
+    for i in range(
+        len(trilhos)
+    ):
+
+        for j in range(
+            i + 1,
+            len(trilhos)
+        ):
+
+            t1 = trilhos[i]
+            t2 = trilhos[j]
+
+            distancia_mm = abs(
+                t2[
+                    "coordenada_media_mm"
+                ]
+                -
+                t1[
+                    "coordenada_media_mm"
+                ]
+            )
+
+            erro_espessura = abs(
+                distancia_mm -
+                espessura_mm
+            )
+
+            if (
+                erro_espessura
+                <=
+                TOLERANCIA_ESPESSURA_MM
+            ):
+
+                pares_espessura.append(
+                    {
+                        "trilho_1":
+                            t1["numero"],
+
+                        "trilho_2":
+                            t2["numero"],
+
+                        "distancia_mm":
+                            distancia_mm,
+
+                        "erro_espessura_mm":
+                            erro_espessura,
+
+                        "score":
+                            (
+                                t1[
+                                    "comprimento_maximo_mm"
+                                ]
+                                +
+                                t2[
+                                    "comprimento_maximo_mm"
+                                ]
+                                -
+                                erro_espessura * 10.0
+                            ),
+                    }
+                )
+
+    pares_espessura.sort(
+        key=lambda item:
+            item["score"],
+        reverse=True,
+    )
+
+    # -------------------------------------------------------------------------
+    # POSIÇÕES DAS DOBRAS
+    # -------------------------------------------------------------------------
+
+    posicoes = sorted(
+        [
+            d.posicao_mm
+            for d in dobras
+            if d.posicao_mm is not None
+        ]
+    )
+
+    if len(posicoes) != 2:
+
+        return {
+            "status":
+                "GEOMETRIA_INSUFICIENTE",
+
+            "motivo":
+                "DUAS_POSICOES_DE_DOBRA_NAO_DISPONIVEIS",
+
+            "trilhos":
+                trilhos,
+
+            "pares_espessura":
+                pares_espessura,
+
+            "abas_identificadas":
+                [],
+        }
+
+    p1 = posicoes[0]
+    p2 = posicoes[1]
+
+    # -------------------------------------------------------------------------
+    # A dimens?o transversal deve ser determinada pela geometria das dobras.
+    #
+    # O contorno pode ter largura/altura normalizadas ou rotacionadas.
+    # Portanto N?O usamos cegamente o eixo do PDF para escolher entre
+    # largura_mm e altura_mm.
+    #
+    # A dimens?o correta precisa conter as duas posi??es reais das dobras.
+    # -------------------------------------------------------------------------
+
+    maior_posicao_dobra = max(posicoes)
+
+    dimensoes_candidatas = [
+        float(contorno.largura_mm),
+        float(contorno.altura_mm),
+    ]
+
+    dimensoes_validas = [
+        dimensao
+        for dimensao in dimensoes_candidatas
+        if dimensao >= maior_posicao_dobra
+    ]
+
+    if not dimensoes_validas:
+        return {
+            "status":
+                "GEOMETRIA_INCONSISTENTE",
+
+            "motivo":
+                "NENHUMA_DIMENSAO_CONTEM_AS_POSICOES_DAS_DOBRAS",
+
+            "trilhos":
+                trilhos,
+
+            "pares_espessura":
+                pares_espessura,
+
+            "posicoes_dobras_mm":
+                posicoes,
+
+            "largura_mm":
+                contorno.largura_mm,
+
+            "altura_mm":
+                contorno.altura_mm,
+
+            "abas_identificadas":
+                [],
+        }
+
+    # Preferimos a menor dimens?o que contenha as duas dobras.
+    # Isso evita selecionar o comprimento longitudinal de 672 mm.
+    dimensao_transversal = min(
+        dimensoes_validas
+    )
+
+    # -------------------------------------------------------------------------
+    # REGIÕES GEOMÉTRICAS EXTERNAS
+    # -------------------------------------------------------------------------
+
+    regiao_1 = p1
+    regiao_2 = p2 - p1
+    regiao_3 = (
+        dimensao_transversal -
+        p2
+    )
+
+    if (
+        regiao_1 <= 0
+        or regiao_2 <= 0
+        or regiao_3 <= 0
+    ):
+
+        return {
+            "status":
+                "GEOMETRIA_INCONSISTENTE",
+
+            "motivo":
+                "REGIOES_TRANSVERSAIS_INVALIDAS",
+
+            "trilhos":
+                trilhos,
+
+            "pares_espessura":
+                pares_espessura,
+
+            "regioes_externas_mm":
+                [
+                    regiao_1,
+                    regiao_2,
+                    regiao_3,
+                ],
+
+            "abas_identificadas":
+                [],
+        }
+
+    # -------------------------------------------------------------------------
+    # IDENTIFICAÇÃO DAS ABAS
+    # -------------------------------------------------------------------------
+
+    abas = [
+        {
+            "numero":
+                1,
+
+            "trecho_externo_mm":
+                regiao_1,
+
+            "posicao_inicio_mm":
+                0.0,
+
+            "posicao_fim_mm":
+                p1,
+
+            "origem":
+                "GEOMETRIA_POSICAO_DOBRA_1",
+        },
+
+        {
+            "numero":
+                2,
+
+            "trecho_externo_mm":
+                regiao_2,
+
+            "posicao_inicio_mm":
+                p1,
+
+            "posicao_fim_mm":
+                p2,
+
+            "origem":
+                "GEOMETRIA_ENTRE_DOBRAS",
+        },
+
+        {
+            "numero":
+                3,
+
+            "trecho_externo_mm":
+                regiao_3,
+
+            "posicao_inicio_mm":
+                p2,
+
+            "posicao_fim_mm":
+                dimensao_transversal,
+
+            "origem":
+                "GEOMETRIA_DOBRA_2_ATE_BORDA",
+        },
+    ]
+
+    # -------------------------------------------------------------------------
+    # VALIDAÇÃO DOS TRILHOS
+    # -------------------------------------------------------------------------
+
+    comprimento_longitudinal = (
+        trilhos_info[
+            "comprimento_total_mm"
+        ]
+    )
+
+    trilhos_relevantes = [
+        t
+        for t in trilhos
+        if (
