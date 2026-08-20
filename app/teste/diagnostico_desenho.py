@@ -4129,10 +4129,8 @@ def calcular_blank(
 
     if (
         status != "CALCULADO"
-        or
-        desenvolvimento_mm <= 0
+        or desenvolvimento_mm <= 0
     ):
-
         return Blank(
             comprimento_desenvolvido_mm=0.0,
             largura_blank_mm=0.0,
@@ -4144,31 +4142,57 @@ def calcular_blank(
             valido=False,
         )
 
-    eixo_longitudinal = (
+    # -------------------------------------------------------------------------
+    # BLANK
+    #
+    # O desenvolvimento calculado pelas abas/BA representa a largura
+    # desenvolvida da chapa.
+    #
+    # O comprimento do blank deve ser obtido da dimensão longitudinal real
+    # da geometria, e NÃO reconstruído a partir da orientação X/Y do PDF.
+    #
+    # Isso evita que uma rotação/orientação do desenho troque:
+    #
+    #     672.0023 x 162.9995
+    #
+    # por:
+    #
+    #     162.9995 x 672.0023
+    #
+    # O valor "comprimento_longitudinal_mm" já foi calculado pela análise
+    # geométrica e é a fonte correta para o blank.
+    # -------------------------------------------------------------------------
+
+    comprimento_longitudinal = (
         desenvolvimento_detalhes.get(
-            "eixo_longitudinal"
+            "comprimento_longitudinal_mm"
         )
     )
 
-    if eixo_longitudinal == "X":
+    try:
+        comprimento_longitudinal = float(
+            comprimento_longitudinal
+        )
+    except (TypeError, ValueError):
+        comprimento_longitudinal = 0.0
 
-        comprimento_longitudinal = (
-            contorno.largura_mm
+    # Fallback seguro: se a análise detalhada não tiver o valor,
+    # usar a maior dimensão externa do contorno.
+    if comprimento_longitudinal <= 0:
+        comprimento_longitudinal = max(
+            float(contorno.largura_mm),
+            float(contorno.altura_mm),
         )
 
-    elif eixo_longitudinal == "Y":
-
-        comprimento_longitudinal = (
-            contorno.altura_mm
-        )
-
-    else:
+    if comprimento_longitudinal <= 0:
         return Blank(
             comprimento_desenvolvido_mm=0.0,
             largura_blank_mm=0.0,
             comprimento_blank_mm=0.0,
             espessura_mm=espessura_mm,
-            metodo="NAO_CALCULADO_EIXO_LONGITUDINAL_INVALIDO",
+            metodo=(
+                "NAO_CALCULADO_COMPRIMENTO_LONGITUDINAL_INVALIDO"
+            ),
             valido=False,
         )
 
@@ -4190,7 +4214,6 @@ def calcular_blank(
 
         valido=True,
     )
-
 
 # =============================================================================
 # DETECTAR CONTORNOS
@@ -5888,5 +5911,6 @@ if __name__ == "__main__":
         traceback.print_exc()
 
         sys.exit(1)
+
 
 
