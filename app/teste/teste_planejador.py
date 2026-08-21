@@ -20,6 +20,7 @@ if str(ROOT) not in sys.path:
 
 from app.importadores.importador_totvs import importar_csv
 from app.engineering.explosao_bom import ExplosaoBOM
+from app.engineering.motor_engenharia import MotorEngenharia
 from app.engineering.planejador_necessidades import (
     PlanejadorNecessidades,
 )
@@ -201,16 +202,70 @@ else:
 
 
 # ============================================================
-# 5. PLANEJAMENTO DE NECESSIDADES
+# 5. MOTOR DE ENGENHARIA / CLASSIFICAÇÃO
 # ============================================================
 
 print()
 print("=" * 80)
-print("5. PLANEJAMENTO DE NECESSIDADES")
+print("5. MOTOR DE ENGENHARIA")
+print("=" * 80)
+
+motor = MotorEngenharia(
+    caminho_cadastro=ARQUIVO_CADASTRO,
+)
+
+resultado_engenharia = motor.enriquecer(
+    resultado_explosao,
+)
+
+if not isinstance(
+    resultado_engenharia,
+    pd.DataFrame,
+):
+
+    resultado_engenharia = pd.DataFrame(
+        resultado_engenharia
+    )
+
+print()
+print(
+    "Componentes enriquecidos:",
+    len(resultado_engenharia),
+)
+
+if "CLASSIFICACAO" in resultado_engenharia.columns:
+
+    classificacoes_motor = (
+        resultado_engenharia["CLASSIFICACAO"]
+        .fillna("")
+        .astype(str)
+        .str.strip()
+    )
+
+    nao_classificados_motor = (
+        classificacoes_motor
+        .str.upper()
+        .eq("NAO_CLASSIFICADO")
+        .sum()
+    )
+
+    print(
+        "Componentes NAO_CLASSIFICADOS no Motor:",
+        nao_classificados_motor,
+    )
+
+
+# ============================================================
+# 6. PLANEJAMENTO DE NECESSIDADES
+# ============================================================
+
+print()
+print("=" * 80)
+print("6. PLANEJAMENTO DE NECESSIDADES")
 print("=" * 80)
 
 planejador = PlanejadorNecessidades(
-    explosao=resultado_explosao,
+    explosao=resultado_engenharia,
     cadastro=df_cadastro,
 )
 
@@ -218,12 +273,12 @@ df_necessidades = planejador.planejar()
 
 
 # ============================================================
-# 6. NECESSIDADE BRUTA
+# 7. NECESSIDADE BRUTA
 # ============================================================
 
 print()
 print("=" * 80)
-print("6. NECESSIDADE BRUTA")
+print("7. NECESSIDADE BRUTA")
 print("=" * 80)
 
 if df_necessidades.empty:
@@ -245,12 +300,12 @@ else:
 
 
 # ============================================================
-# 7. RESUMO POR CLASSIFICAÇÃO
+# 8. RESUMO POR CLASSIFICAÇÃO
 # ============================================================
 
 print()
 print("=" * 80)
-print("7. RESUMO POR CLASSIFICAÇÃO")
+print("8. RESUMO POR CLASSIFICAÇÃO")
 print("=" * 80)
 
 resumo_classificacao = (
@@ -275,12 +330,12 @@ else:
 
 
 # ============================================================
-# 8. RESUMO POR CLASSIFICAÇÃO E UNIDADE
+# 9. RESUMO POR CLASSIFICAÇÃO E UNIDADE
 # ============================================================
 
 print()
 print("=" * 80)
-print("8. RESUMO POR CLASSIFICAÇÃO E UNIDADE")
+print("9. RESUMO POR CLASSIFICAÇÃO E UNIDADE")
 print("=" * 80)
 
 resumo_unidade = (
@@ -305,12 +360,12 @@ else:
 
 
 # ============================================================
-# 9. TOTAIS
+# 10. TOTAIS
 # ============================================================
 
 print()
 print("=" * 80)
-print("9. TOTAIS")
+print("10. TOTAIS")
 print("=" * 80)
 
 total_necessidade = (
@@ -325,12 +380,12 @@ print(
 
 
 # ============================================================
-# 10. VALIDAÇÃO DA MULTIPLICAÇÃO
+# 11. VALIDAÇÃO DA MULTIPLICAÇÃO
 # ============================================================
 
 print()
 print("=" * 80)
-print("10. VALIDAÇÃO DA REGRA DE NÃO MULTIPLICAÇÃO DUPLA")
+print("11. VALIDAÇÃO DA REGRA DE NÃO MULTIPLICAÇÃO DUPLA")
 print("=" * 80)
 
 print()
@@ -367,12 +422,12 @@ print(
 
 
 # ============================================================
-# 11. VALIDAÇÃO DA CLASSIFICAÇÃO
+# 12. VALIDAÇÃO DA CLASSIFICAÇÃO
 # ============================================================
 
 print()
 print("=" * 80)
-print("11. VALIDAÇÃO DA CLASSIFICAÇÃO")
+print("12. VALIDAÇÃO DA CLASSIFICAÇÃO")
 print("=" * 80)
 
 if df_necessidades.empty:
@@ -382,22 +437,41 @@ if df_necessidades.empty:
         "STATUS: SEM DADOS PARA VALIDAR"
     )
 
+    classificacoes_validas = pd.Series(
+        dtype=str
+    )
+
+    classificacoes_nao_classificadas = 0
+
 else:
+
+    if "classificacao" in df_necessidades.columns:
+
+        coluna_classificacao = "classificacao"
+
+    elif "CLASSIFICACAO" in df_necessidades.columns:
+
+        coluna_classificacao = "CLASSIFICACAO"
+
+    else:
+
+        raise RuntimeError(
+            "A saída do PlanejadorNecessidades não possui "
+            "a coluna de classificação esperada."
+        )
 
     classificacoes = (
         df_necessidades[
-            "classificacao"
+            coluna_classificacao
         ]
         .fillna("")
         .astype(str)
         .str.strip()
     )
 
-    classificacoes_validas = (
-        classificacoes[
-            classificacoes != ""
-        ]
-    )
+    classificacoes_validas = classificacoes[
+        classificacoes != ""
+    ]
 
     classificacoes_nao_classificadas = (
         classificacoes
@@ -441,12 +515,89 @@ else:
 
 
 # ============================================================
-# 12. RESUMO FINAL
+# 13. VALIDAÇÃO ESPECÍFICA G2005887
 # ============================================================
 
 print()
 print("=" * 80)
-print("12. RESUMO FINAL DO TESTE")
+print("13. VALIDAÇÃO DO G2005887")
+print("=" * 80)
+
+linhas_g2005887 = df_necessidades[
+    df_necessidades["componente"].astype(str).str.upper().eq("G2005887")
+]
+
+if linhas_g2005887.empty:
+
+    raise RuntimeError(
+        "G2005887 não encontrado na necessidade bruta."
+    )
+
+linha_g2005887 = linhas_g2005887.iloc[0]
+
+if "quantidade_conjunto" in linha_g2005887.index:
+    quantidade_g2005887 = float(
+        linha_g2005887["quantidade_conjunto"]
+    )
+else:
+    quantidade_g2005887 = None
+
+if "quantidade_necessaria" in linha_g2005887.index:
+    necessidade_g2005887 = float(
+        linha_g2005887["quantidade_necessaria"]
+    )
+elif "quantidade_total" in linha_g2005887.index:
+    necessidade_g2005887 = float(
+        linha_g2005887["quantidade_total"]
+    )
+else:
+    raise RuntimeError(
+        "A necessidade do G2005887 não possui coluna de quantidade esperada."
+    )
+
+esperado_g2005887 = 1011569.800
+
+print()
+print("Componente: G2005887")
+
+if quantidade_g2005887 is not None:
+    print(
+        "Quantidade por conjunto:",
+        f"{quantidade_g2005887:.3f}",
+    )
+
+print(
+    "Quantidade necessária:",
+    f"{necessidade_g2005887:.3f}",
+)
+
+print(
+    "Esperado:",
+    f"{esperado_g2005887:.3f}",
+)
+
+if abs(
+    necessidade_g2005887 - esperado_g2005887
+) > 1e-6:
+
+    raise AssertionError(
+        "G2005887 calculado incorretamente. "
+        f"Obtido={necessidade_g2005887}, "
+        f"Esperado={esperado_g2005887}"
+    )
+
+print(
+    "OK - G2005887 calculado corretamente."
+)
+
+
+# ============================================================
+# 14. RESUMO FINAL
+# ============================================================
+
+print()
+print("=" * 80)
+print("14. RESUMO FINAL DO TESTE")
 print("=" * 80)
 
 print()
@@ -468,6 +619,11 @@ print(
 )
 
 print(
+    "Componentes após MotorEngenharia:",
+    len(resultado_engenharia),
+)
+
+print(
     "Itens na necessidade:",
     len(df_necessidades),
 )
@@ -486,6 +642,10 @@ print(
 )
 
 print(
+    " - Motor de Engenharia / classificação: OK"
+)
+
+print(
     " - Necessidade bruta: OK"
 )
 
@@ -494,7 +654,7 @@ print(
 )
 
 print(
-    " - Classificação dos componentes: OK"
+    " - G2005887: OK"
 )
 
 print(
@@ -510,26 +670,40 @@ print(
 
 print()
 
-print(
-    "STATUS FINAL: "
-    "PLANEJADOR DE NECESSIDADES VALIDADO"
-)
+if (
+    len(resultado_explosao) == 230
+    and len(resultado_engenharia) == 230
+    and len(df_necessidades) == 230
+    and classificacoes_nao_classificadas == 0
+    and abs(
+        necessidade_g2005887 - esperado_g2005887
+    ) <= 1e-6
+):
+
+    print(
+        "STATUS FINAL: "
+        "PLANEJADOR DE NECESSIDADES VALIDADO"
+    )
+
+else:
+
+    raise AssertionError(
+        "Uma ou mais validações da Necessidade Bruta falharam."
+    )
 
 print()
-
 print(
     "Camada validada:"
 )
 
 print(
-    "BOM → Explosão → Necessidade Bruta → Classificação"
+    "BOM → Explosão → Motor de Engenharia → "
+    "Classificação → Necessidade Bruta"
 )
 
 print()
-
 print(
-    "A próxima etapa do AIZI será definida "
-    "a partir da arquitetura de engenharia."
+    "DXF/PDF, roteiro e estoque permanecem fora desta etapa."
 )
 
 print()
