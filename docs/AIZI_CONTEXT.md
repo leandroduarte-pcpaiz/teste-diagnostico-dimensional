@@ -758,3 +758,46 @@ A construção deve priorizar:
 8. evolução contínua.
 
 Este documento representa o contexto-base conhecido do projeto até 12/08/2026.
+---
+
+## MARCO 2026-08-21 — GEOMETRIA DXF
+
+O projeto possui agora um conversor DXF geométrico inicial funcional na branch `feature/dxf-geometria`.
+
+Commit de referência:
+`27cf96d` — `Adiciona conversor DXF geometrico inicial`
+
+Arquivos DXF validados:
+
+- M1101621.DXF
+- M1101622.DXF
+- M1101623.DXF
+- M1101624.DXF
+- M1101628.DXF
+
+Funcionalidades validadas:
+
+- leitura DXF com `ezdxf`;
+- identificação de linhas;
+- identificação de arcos;
+- identificação de círculos;
+- envelope dimensional;
+- identificação de furos;
+- classificação geométrica dos arcos;
+- geração de JSON estruturado AIZI;
+- identificação das unidades do desenho.
+
+Diretriz arquitetural:
+
+Quando houver DXF disponível, sua geometria deve ser considerada a fonte geométrica primária. O PDF permanece como fonte complementar/fallback.
+
+Próxima integração:
+
+1. contorno externo;
+2. furos;
+3. identificação de dobras;
+4. desenvolvimento/blank;
+5. integração com `PlanejadorDimensional`;
+6. integração com `CalculadoraCorte`.
+
+A geometria extraída do DXF deve ser convertida para uma estrutura intermediária AIZI, evitando acoplamento direto dos módulos de engenharia ao `ezdxf`.

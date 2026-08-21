@@ -1056,3 +1056,35 @@ A inteligência será adicionada sobre essa base.
 > **Construir primeiro a capacidade de entender e calcular. Depois construir a capacidade de interpretar. Finalmente construir a capacidade de decidir.**
 
 Esse será o princípio de evolução do AIZI Engineering AI.
+---
+
+# MARCO 2026-08-21 — GEOMETRIA DXF
+
+**Branch:** `feature/dxf-geometria`
+**Commit:** `27cf96d` — `Adiciona conversor DXF geometrico inicial`
+
+## Estado atual
+
+O conversor DXF geométrico inicial está funcional e foi validado com arquivos reais de fabricação.
+
+### Funcionalidades validadas
+
+- leitura de arquivos DXF via `ezdxf`;
+- identificação de linhas;
+- identificação de arcos;
+- identificação de círculos;
+- envelope dimensional;
+- identificação de furos;
+- classificação geométrica dos arcos;
+- geração de JSON estruturado AIZI;
+- identificação das unidades do desenho.
+
+### Arquivos DXF utilizados na validação
+
+```text
+M1101621.DXF
+M1101622.DXF
+M1101623.DXF
+M1101624.DXF
+M1101628.DXF
+```
