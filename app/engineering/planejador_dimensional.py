@@ -1238,6 +1238,148 @@ class PlanejadorDimensional:
         cls,
         dados: Dict[str, Any],
     ) -> Dict[str, Any]:
+        # ======================================================
+        # INTEGRACAO DIRETA COM EXTRATOR DXF
+        # ======================================================
+        #
+        # FLAT_PATTERN j? representa a pe?a desenvolvida.
+        # O BLANK calculado pelo DXF ? a fonte geom?trica.
+        # ======================================================
+
+        if isinstance(dados, dict):
+
+            tipo_geometria_dxf = cls._texto(
+                dados.get("tipo_geometria")
+            )
+
+            if tipo_geometria_dxf == "FLAT_PATTERN":
+
+                blank_dxf = dados.get("blank")
+
+                if not isinstance(blank_dxf, dict):
+                    blank_dxf = {}
+
+                largura = cls._numero(
+                    blank_dxf.get("largura_mm")
+                )
+
+                comprimento = cls._numero(
+                    blank_dxf.get("comprimento_mm")
+                )
+
+                if largura is None:
+                    largura = cls._numero(
+                        dados.get("largura_blank_mm")
+                    )
+
+                if comprimento is None:
+                    comprimento = cls._numero(
+                        dados.get("comprimento_blank_mm")
+                    )
+
+                if largura is None:
+                    largura = cls._numero(
+                        dados.get("dimensao_x_mm")
+                    )
+
+                if comprimento is None:
+                    comprimento = cls._numero(
+                        dados.get("dimensao_y_mm")
+                    )
+
+                material = (
+                    dados.get("material")
+                    or dados.get("materia_prima")
+                )
+
+                return {
+                    "tipo_dimensional": "CHAPA",
+                    "espessura_mm": cls._numero(
+                        dados.get("espessura_mm")
+                    ),
+                    "diametro_externo_mm": None,
+                    "diametro_interno_mm": None,
+                    "bitola_mm": None,
+                    "largura_padrao_mm": None,
+                    "comprimento_padrao_mm": None,
+                    "largura_efetiva_mm": largura,
+                    "comprimento_efetivo_mm": comprimento,
+                    "material": cls._normalizar_material_desenho(
+                        material
+                    ),
+                    "status_dimensional": "CHAPA DXF IDENTIFICADA",
+                    "preparado_para_corte": (
+                        largura is not None
+                        and comprimento is not None
+                    ),
+                    "codigo_peca": dados.get("codigo_peca"),
+                    "materia_prima": dados.get("materia_prima"),
+                    "dimensoes_geometricas_mm": [
+                        x for x in (
+                            cls._numero(
+                                dados.get("dimensao_x_mm")
+                            ),
+                            cls._numero(
+                                dados.get("dimensao_y_mm")
+                            ),
+                        )
+                        if x is not None
+                    ],
+                    "dobras": dados.get("dobras"),
+                    "blank_determinado": (
+                        largura is not None
+                        and comprimento is not None
+                    ),
+                    "blank": (
+                        {
+                            "largura_mm": round(largura, 4),
+                            "comprimento_mm": round(comprimento, 4),
+                        }
+                        if (
+                            largura is not None
+                            and comprimento is not None
+                        )
+                        else None
+                    ),
+                    "k_factor": None,
+                    "desenvolvimento_mm": comprimento,
+                    "largura_blank_mm": largura,
+                    "comprimento_blank_mm": comprimento,
+                    "metodo_desenvolvimento": "DXF_GEOMETRIA",
+                    "bend_allowance_total_mm": None,
+                    "bend_deduction_total_mm": None,
+                    "quantidade_dobras": 0,
+                    "tipo_geometria": tipo_geometria_dxf,
+                    "area_mm2": cls._numero(
+                        dados.get("area_mm2")
+                    ),
+                    "area_bruta_mm2": cls._numero(
+                        dados.get("area_bruta_mm2")
+                    ),
+                    "area_furos_mm2": cls._numero(
+                        dados.get("area_furos_mm2")
+                    ),
+                    "area_liquida_mm2": cls._numero(
+                        dados.get("area_liquida_mm2")
+                    ),
+                    "perimetro_mm": cls._numero(
+                        dados.get("perimetro_mm")
+                    ),
+                    "contornos_encontrados": dados.get(
+                        "contornos_encontrados"
+                    ),
+                    "furos_contornos_internos": dados.get(
+                        "furos_contornos_internos"
+                    ),
+                    "blank_origem": dados.get(
+                        "blank_origem"
+                    ),
+                    "blank_status": dados.get(
+                        "blank_status"
+                    ),
+                    "dados_extracao": dados,
+                }
+
         """
         Analisa uma peça proveniente do ExtratorDesenho.
 
